@@ -13,15 +13,50 @@ private:
   int size;
 
 public:
-  DQueue();
-  ~DQueue();
+  DQueue() {
+    size = 0;
+    first = NULL;
+    last = NULL;
+  }
 
-  t getHead();
-  t getTail();
-  bool isEmpty();
-  int count();
-  void addHead(t val);
-  void addTail(t val);
+  ~DQueue() {
+    if (size>0) {
+      //Node *p;
+      /*TODO delete nodes*/
+    }
+  }
+
+  t getHead() {
+    return first;
+  }
+
+  t getTail() {
+    return last;
+  }
+
+  void addHead(t val) {
+    size++;
+  }
+
+  void addTail(t val) {
+    size++;
+  }
+
+  void popHead() {
+    size--;
+  }
+
+  void popTail() {
+    size--;
+  }
+
+  bool isEmpty() {
+    return (size == 0);
+  }
+
+  int count() {
+    return size;
+  }
 
 };
 
