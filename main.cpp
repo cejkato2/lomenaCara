@@ -68,7 +68,7 @@ bool isElementLine(Point *a, Point *b, Point *c){
 int val(Point *a, Point *b, DQueue<Point *> *in){
 
     int count = 0;
-    Point *c = NULL;
+    //Point *c = NULL; //-unused
     DQueue<Point *>::Node *myNode = in->getHeadNode();
 
 
@@ -126,12 +126,7 @@ int main(int argc, char **argv) {
   b->x=1;
   b->y=1;
 
-  std::cout << "Count of points on the line [ " << a->x << "," << a->y << "]  [" << b->x << ", " << b->y << "] is " << val(a,b,input) << std::endl;
-
-
-
-
-
+  std::cout << "Count of points on the line " << a << " " << b << " is " << val(a,b,input) << std::endl;
 
    /*--------*/
   /*cleaning*/
@@ -140,9 +135,9 @@ int main(int argc, char **argv) {
   delete a;
   delete b;
   delete input;
-  delete result;
 
   if (return_val==SUCCESS) {
+    delete result;
     if (backup!=NULL) {
       while (!backup->isEmpty()) {
         delete backup->getHead();
