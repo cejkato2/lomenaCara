@@ -40,6 +40,7 @@ DQueue<Point *> *find_line(DQueue<Point *> *in) {
   return q;
 }
 
+
 void print_result(FILE *f, DQueue<Point *> *q) {
 
   DQueue<Point *>::Node *p = q->getHeadNode();
@@ -47,6 +48,43 @@ void print_result(FILE *f, DQueue<Point *> *q) {
     fprintf(f, "%i %i\n", p->data->x, p->data->y);
     p = p->next;
   }
+}
+
+
+
+bool isElementLine(Point *a, Point *b, Point *c){
+
+    // if point a or b are equal to point c
+    if( (a->x == c->x && a->y == c->y) || (b->x == c->x && b->y == c->y))
+        return false;
+
+   int det = (a->x * b->y + a->y *c->x + b->x * c->y) - (b->y * c->x + c->y*a->x + a->y * b->x);
+
+            if(det == 0)
+                return true;
+            else return false;
+}
+
+int val(Point *a, Point *b, DQueue<Point *> *in){
+
+    int count = 0;
+    Point *c = NULL;
+    DQueue<Point *>::Node *myNode = in->getHeadNode();
+
+
+   while(myNode!=NULL)
+    {
+
+        if(isElementLine(a,b,myNode->data))
+            count++;
+
+        if(myNode != in->getTailNode())
+            myNode = myNode->next;
+        else break;
+    }
+
+    return count;
+
 }
 
 int main(int argc, char **argv) {
@@ -78,9 +116,29 @@ int main(int argc, char **argv) {
     print_result(stdout, result);
   }
 
+
+  // testing val function
+  Point * a = new Point();
+  a->x=3;
+  a->y=1;
+
+  Point * b = new Point();
+  b->x=1;
+  b->y=1;
+
+  std::cout << "Count of points on the line [ " << a->x << "," << a->y << "]  [" << b->x << ", " << b->y << "] is " << val(a,b,input) << std::endl;
+
+
+
+
+
+
    /*--------*/
   /*cleaning*/
  /*--------*/
+
+  delete a;
+  delete b;
   delete input;
   delete result;
 
