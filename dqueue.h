@@ -128,19 +128,6 @@ public:
     return nq;
   }
 
-  std::ostream &operator<<( std::ostream &o ) {
-    std::cout << "operator <<" << std::endl;
-    return o;
-    DQueue::Node *p = first;
-    o << "Content of queue:" << std::endl;
-    while (p!=NULL) {
-      o << p->data << " ";
-      p = p->next;
-    }
-    o << std::endl;
-    return o;
-  }
-
   friend std::ostream &operator<<( std::ostream &o, const DQueue<t> *q ) {
     DQueue::Node *p = q->first;
     o << "Content of queue:" << std::endl;
