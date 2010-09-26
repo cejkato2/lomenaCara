@@ -5,7 +5,7 @@ GREEN="\033[0;32m"
 NORMAL="\033[m"
 
 
-all: program test
+all: program test test_dqueue
 
 program: main.cpp
 	$(CC) $(CFLAGS) main.cpp

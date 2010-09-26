@@ -42,6 +42,11 @@ DQueue<Point *> *find_line(DQueue<Point *> *in) {
 
 void print_result(FILE *f, DQueue<Point *> *q) {
 
+  DQueue<Point *>::Node *p = q->getHeadNode();
+  while (p!=NULL) {
+    fprintf(f, "%i %i\n", p->data->x, p->data->y);
+    p = p->next;
+  }
 }
 
 int main(int argc, char **argv) {

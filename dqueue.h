@@ -7,7 +7,7 @@
 
 template <class t>
 class DQueue {
-private:
+public:
   struct Node {
     t data;
     Node *prev;
@@ -17,7 +17,9 @@ private:
       prev = NULL;
       next = NULL;
     }
-  } *first, *last;
+  };
+private:
+  Node *first, *last;
 
   int size;
 
