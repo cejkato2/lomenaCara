@@ -1,6 +1,9 @@
 #ifndef TYPES_H
 #define TYPES_H
 #include <iostream>
+#define SUCCESS         0
+#define MAX_AMOUNT_ERR  1
+#define LESS_AMOUNT_ERR 2
 
   struct Point {
     int x;

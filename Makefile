@@ -1,5 +1,8 @@
 CC=g++
 CFLAGS=-Wall -g
+RED="\033[0;31m"
+NORMAL="\033[m"
+
 
 all: program test
 
@@ -11,6 +14,9 @@ clean:
 
 test:
 	./a.out input.dat
+	echo Test for error
+	./a.out input-err1.dat && echo -e ${RED}FAILED${NORMAL} || echo OK
+	./a.out input-err2.dat && echo FAILED || echo OK
 
 test_dqueue: test_dqueue.cpp dqueue.h
 	$(CC) $(CFLAGS) -DDEBUG test_dqueue.cpp -o testdqueue
