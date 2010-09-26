@@ -47,6 +47,15 @@ public:
     return last->data;
   }
 
+  Node *getHeadNode() {
+    return first;
+  }
+
+  Node *getTailNode() {
+    return last;
+  }
+
+
   void addHead(t val) {
     Node *n = new Node(val);
     if (size>0) {
