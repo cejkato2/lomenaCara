@@ -54,8 +54,7 @@ void print_result(FILE *f, DQueue<Point *> *q) {
 
 bool isElementLine(Point *a, Point *b, Point *c){
 
-    // if point a or b are equal to point c
-    if( (a->x == c->x && a->y == c->y) || (b->x == c->x && b->y == c->y))
+    if(*a==*c || *b==*c)
         return false;
 
    int det = (a->x * b->y + a->y *c->x + b->x * c->y) - (b->y * c->x + c->y*a->x + a->y * b->x);
@@ -68,9 +67,7 @@ bool isElementLine(Point *a, Point *b, Point *c){
 int val(Point *a, Point *b, DQueue<Point *> *in){
 
     int count = 0;
-    //Point *c = NULL; //-unused
     DQueue<Point *>::Node *myNode = in->getHeadNode();
-
 
    while(myNode!=NULL)
     {

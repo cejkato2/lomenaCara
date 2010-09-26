@@ -18,6 +18,16 @@
       o << "[ " << p->x << ", " << p->y << " ]";
       return o;
     }
+  
+
+   friend bool operator== (const Point &a, const Point &b)
+{
+       if(a.x == b.x && a.y == b.y)
+           return true;
+       else return false;
+}
+
+
   };
 
 
