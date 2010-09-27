@@ -5,6 +5,8 @@
 #include <iostream>
 #endif
 
+#define QUEUE_SORT_DIRECTION *n>*it
+
 template <class t>
 class DQueue {
 public:
@@ -16,6 +18,12 @@ public:
       data = val;
       prev = NULL;
       next = NULL;
+    }
+    friend bool operator<(const Node &a, const Node &b) {
+      return (a.data < b.data);
+    }
+    friend bool operator>(const Node &a, const Node &b) {
+      return (a.data > b.data);
     }
   };
 private:
@@ -57,6 +65,43 @@ public:
     return last;
   }
 
+  void insertSorted(t val) {
+    Node *n = new Node(val);
+    if (size==0) {
+      //insert first val
+      first = n;
+      last = n;
+      size++;
+      return;
+    }
+
+    Node *it = first;
+    while (it != NULL) {
+      // eg. QUEUE_SORT_DIRECTION *n<*it
+      if (QUEUE_SORT_DIRECTION) { 
+        // insert new value before 'it'
+        n->prev = it->prev;
+        n->next = it;
+        it->prev = n;
+        if (it==first) {
+          first = n;
+        }
+        size++;
+        break;
+      }
+      if (it==last) {
+        //append 'n'
+        n->next = NULL;
+        n->prev = it;
+        it->next = n;
+        last = n;
+        size++;
+        break;
+      }
+
+      it = it->next;
+    }
+  }
 
   void addHead(t val) {
     Node *n = new Node(val);

@@ -65,6 +65,16 @@ int main(int argc, char **argv) {
 
   delete t;
   delete t2;
+
+  std::cout << "ordering test" << std::endl;
+  DQueue<int> *oq = new DQueue<int>();
+  oq->insertSorted(5);
+  oq->insertSorted(1);
+  oq->insertSorted(6);
+  v = oq->getData();
+  for (it=v.begin(); it!=v.end(); ++it) {
+    std::cout << *it << std::endl;
+  }
   return(0);
 }
 
