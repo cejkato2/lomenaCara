@@ -3,6 +3,8 @@ CFLAGS=-Wall -g
 RED="\033[0;31m"
 GREEN="\033[0;32m"
 NORMAL="\033[m"
+OK=${GREEN}OK${NORMAL}
+FAILED=${RED}FAILED${NORMAL}
 
 
 all: program test test_dqueue
@@ -16,8 +18,8 @@ clean:
 test:
 	./a.out input.dat
 	echo Test for error
-	./a.out input-err1.dat && echo -e ${RED}FAILED${NORMAL} || echo -e ${GREEN}OK${NORMAL}
-	./a.out input-err2.dat && echo -e ${RED}FAILED${NORMAL} || echo -e ${GREEN}OK${NORMAL}
+	./a.out input-err1.dat && echo -e ${FAILED} || echo -e ${OK}
+	./a.out input-err2.dat && echo -e ${FAILED} || echo -e ${OK}
 
 test_dqueue: test_dqueue.cpp dqueue.h
 	$(CC) $(CFLAGS) -DDEBUG test_dqueue.cpp -o testdqueue

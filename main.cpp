@@ -36,6 +36,14 @@ DQueue<Point *> *find_line(DQueue<Point *> *in) {
   /* 
    * TODO
    * algorithm for finding line
+   *
+   * 1) copy 'in' queue to temp
+   * iterate over temp:
+   *   2) take point A from temp
+   *   3) count val for A and every X from in
+   *   4) add all AXs to ordered stack
+   * 5) from the ordered stack take as many AXs
+   *    as needed to cover all points
    */
   return q;
 }
