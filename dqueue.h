@@ -1,7 +1,7 @@
 #ifndef DQUEUE_H
 #define DQUEUE_H
-#ifdef DEBUG
 #include <vector>
+#ifdef DEBUG
 #include <iostream>
 #endif
 
@@ -196,7 +196,7 @@ public:
   }
 
 
-  #ifdef DEBUG
+  
   std::vector<t> getData() {
     std::vector<t> v;
     Node *p = first;
@@ -207,7 +207,7 @@ public:
     }
     return v;
   }
-  #endif
+  
 };
 
 #endif
