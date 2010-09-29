@@ -3,87 +3,118 @@
 #include "types.h"
 #include "dqueue.h"
 #include "search.h"
+#include <vector>
 
-#define MAX_AMOUNT_POINTS 3
+#define MIN_AMOUNT_POINTS 3
+
+std::vector<Point *> points;
+DQueue<Point *> *inp;
 
 int read_points(FILE *f, DQueue<Point *> *q) {
-  int amount;
-  fscanf(f, "%i", &amount);
-  if (amount < MAX_AMOUNT_POINTS) {
-    fclose(f);
-    std::cerr << "Amount of points has to be greater or equal " << \
-      MAX_AMOUNT_POINTS << std::endl;
-    return MAX_AMOUNT_ERR;
-  }
-  for (int i=0; i<amount; ++i) {
-    if (feof(f)!=0)
-    {
-      std::cerr << "Amount of inserted points is lesser than expected" << \
-        std::endl;
-      return LESS_AMOUNT_ERR;
+    int amount;
+    fscanf(f, "%i", &amount);
+    if (amount < MIN_AMOUNT_POINTS) {
+        fclose(f);
+        std::cerr << "Amount of points has to be greater or equal " <<  \
+      MIN_AMOUNT_POINTS << std::endl;
+        return MIN_AMOUNT_ERR;
     }
-    Point *p = new Point();
-    fscanf(f, "%i %i", &p->x, &p->y);
-    q->addHead(p);
-  }
+    for (int i = 0; i < amount; ++i) {
+        if (feof(f) != 0) {
+            std::cerr << "Amount of inserted points is lesser than expected" <<  \
+        std::endl;
+            return LESS_AMOUNT_ERR;
+        }
+        Point *p = new Point();
+        fscanf(f, "%i %i", &p->x, &p->y);
+        q->addHead(p);
+    }
 
-  fclose(f);
-  return SUCCESS;
+    fclose(f);
+    return SUCCESS;
 }
 
 DQueue<Point *> *find_line(DQueue<Point *> *in) {
-  DQueue<Point *> *q = new DQueue<Point *>();
-  /* 
-   * TODO
-   * algorithm for finding line
-   *
-   * 1) copy 'in' queue to temp
-   * iterate over temp:
-   *   2) take point A from temp
-   *   3) count val for A and every X from in
-   *   4) add all AXs to ordered stack
-   * 5) from the ordered stack take as many AXs
-   *    as needed to cover all points
-   */
-  return q;
+    DQueue<Point *> *q = new DQueue<Point *>();
+    /*
+     * TODO
+     * algorithm for finding line
+     *
+     * 1) copy 'in' queue to temp
+     * iterate over temp:
+     *   2) take point A from temp
+     *   3) count val for A and every X from in
+     *   4) add all AXs to ordered stack
+     * 5) from the ordered stack take as many AXs
+     *    as needed to cover all points
+     */
+    return q;
 }
 
 
 void print_result(FILE *f, DQueue<Point *> *q) {
 
-  DQueue<Point *>::Node *p = q->getHeadNode();
-  while (p!=NULL) {
-    fprintf(f, "%i %i\n", p->data->x, p->data->y);
-    p = p->next;
-  }
+    DQueue<Point *>::Node *p = q->getHeadNode();
+    while (p != NULL) {
+        fprintf(f, "%i %i\n", p->data->x, p->data->y);
+        p = p->next;
+    }
 }
 
+bool isElementLine(Point *a, Point *b, Point *c) {
 
-
-bool isElementLine(Point *a, Point *b, Point *c){
-
-    if(*a==*c || *b==*c)
+    if (*a == *c || *b == *c)
         return false;
 
-   int det = (a->x * b->y + a->y *c->x + b->x * c->y) - (b->y * c->x + c->y*a->x + a->y * b->x);
+    int det = (a->x * b->y + a->y * c->x + b->x * c->y) - (b->y * c->x + c->y * a->x + a->y * b->x);
 
-            if(det == 0)
-                return true;
-            else return false;
+    if (det == 0)
+        return true;
+    else return false;
 }
 
-int val(Point *a, Point *b, DQueue<Point *> *in){
+
+
+/*
+ * is the point c on the segment between points a and b ?
+ */
+bool isOnSegment(Point *a, Point *b,Point *c){
+
+    if(!isElementLine(a,b,c)) // if it is not on the line, then it cannot be on the segment
+        return false;
+
+    if(  (a->x < c->x) && (c->x < b->x)  )
+        return true;
+
+    if(  (b->x < c->x) && (c->x < a->x)  )
+        return true;
+
+    if( (a->y < c->y) && (c->y < b->y)  )
+        return true;
+
+    if( (b->y < c->y) && (c->y < a->y)  )
+        return true;
+
+
+    return false;
+}
+
+
+int val(Point *a, Point *b, DQueue<Point *> *in) {
+
+    if(*a==*b)
+        return 0;
 
     int count = 0;
     DQueue<Point *>::Node *myNode = in->getHeadNode();
 
-   while(myNode!=NULL)
-    {
+    while (myNode != NULL) {
 
-        if(isElementLine(a,b,myNode->data))
+        if (isOnSegment(a,b,myNode ->data))  //X-----*-----X//
             count++;
 
-        if(myNode != in->getTailNode())
+
+        if (myNode != in->getTailNode())
             myNode = myNode->next;
         else break;
     }
@@ -92,66 +123,90 @@ int val(Point *a, Point *b, DQueue<Point *> *in){
 
 }
 
+
+void startRecursion() {
+
+
+    for(unsigned int i =0;i<points.size()-1;i++){
+
+        for(unsigned int j=i+1; j<points.size(); j++)
+
+            std::cout << points[i] << "and" << points[j] << "has val ="  << val(points[i], points[j], inp) << std::endl;
+
+    }
+
+}
+
 int main(int argc, char **argv) {
-  int return_val = SUCCESS;
+    int return_val = SUCCESS;
 
-  FILE *input_file = stdin;
-  if (argc > 1) {
-    input_file = fopen(argv[1], "r");
-    if (input_file==NULL) {
-      input_file = stdin;
+    FILE *input_file = stdin;
+    if (argc > 1) {
+        input_file = fopen(argv[1], "r");
+        if (input_file == NULL) {
+            input_file = stdin;
+        }
     }
-  }
-  
-  DQueue<Point *> *result, *input, *backup;
-  
-  /*init of input queue*/
-  input = new DQueue<Point *>();
 
-  /*get points from stdin*/
-  return_val = read_points(input_file, input);
-  if (return_val == SUCCESS) {
-    std::cout << input;
-    /* backup points */
-    backup = input->copy();
+    DQueue<Point *> *result, *input, *backup;
 
-    /*finding algorithm*/
-    result = find_line(input);
+    /*init of input queue*/
+    input = new DQueue<Point *>();
 
-    print_result(stdout, result);
-  }
+    /*get points from stdin*/
+    return_val = read_points(input_file, input);
+    if (return_val == SUCCESS) {
+        std::cout << input;
+        /* backup points */
+        backup = input->copy();
+        inp=input->copy();
 
+        /*finding algorithm*/
+        result = find_line(input);
 
-  // testing val function
-  Point * a = new Point();
-  a->x=3;
-  a->y=1;
-
-  Point * b = new Point();
-  b->x=1;
-  b->y=1;
-
-  std::cout << "Count of points on the line " << a << " " << b << " is " << val(a,b,input) << std::endl;
-
-   /*--------*/
-  /*cleaning*/
- /*--------*/
-
-  delete a;
-  delete b;
-  delete input;
-
-  if (return_val==SUCCESS) {
-    delete result;
-    if (backup!=NULL) {
-      while (!backup->isEmpty()) {
-        delete backup->getHead();
-        backup->popHead();
-      }
-      delete backup;
+        print_result(stdout, result);
+    }else{
+        delete input;
+        return return_val;
     }
-  }
 
-  return(return_val);
+
+    // testing val function
+    Point * a = new Point();
+    a->x = 3;
+    a->y = 1;
+
+    Point * b = new Point();
+    b->x = 1;
+    b->y = 1;
+
+    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, input) << std::endl;
+
+    points = input->getData();
+
+
+
+    startRecursion();
+
+    /*--------*/
+    /*cleaning*/
+    /*--------*/
+
+    delete a;
+    delete b;
+    delete input;
+
+    if (return_val == SUCCESS) {
+        delete result;
+        if (backup != NULL) {
+            while (!backup->isEmpty()) {
+                delete backup->getHead();
+                backup->popHead();
+            }
+            delete backup;
+        }
+    }
+
+    return (return_val);
 }
 

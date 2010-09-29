@@ -2,7 +2,7 @@
 #define TYPES_H
 #include <iostream>
 #define SUCCESS         0
-#define MAX_AMOUNT_ERR  1
+#define MIN_AMOUNT_ERR  1
 #define LESS_AMOUNT_ERR 2
 
   struct Point {
