@@ -7,21 +7,20 @@
 
 #define MIN_AMOUNT_POINTS 3
 
-std::vector<Point *> points;
-DQueue<Point *> *inp;
+std::vector<Point *> points; // all readed points
 
 int read_points(FILE *f, DQueue<Point *> *q) {
     int amount;
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<  \
+        std::cerr << "Amount of points has to be greater or equal " <<   \
       MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<  \
+            std::cerr << "Amount of inserted points is lesser than expected" <<   \
         std::endl;
             return LESS_AMOUNT_ERR;
         }
@@ -51,7 +50,6 @@ DQueue<Point *> *find_line(DQueue<Point *> *in) {
     return q;
 }
 
-
 void print_result(FILE *f, DQueue<Point *> *q) {
 
     DQueue<Point *>::Node *p = q->getHeadNode();
@@ -61,7 +59,11 @@ void print_result(FILE *f, DQueue<Point *> *q) {
     }
 }
 
-bool isElementLine(Point *a, Point *b, Point *c) {
+/*
+ * is the point c on the line which is defined by points a and b ?
+ */
+
+bool isElementLine(const Point *a, const Point *b,const Point *c) {
 
     if (*a == *c || *b == *c)
         return false;
@@ -73,65 +75,61 @@ bool isElementLine(Point *a, Point *b, Point *c) {
     else return false;
 }
 
-
-
 /*
  * is the point c on the segment between points a and b ?
  */
-bool isOnSegment(Point *a, Point *b,Point *c){
+bool isOnSegment(const Point *a, const Point *b, const Point *c) {
 
-    if(!isElementLine(a,b,c)) // if it is not on the line, then it cannot be on the segment
+    if (!isElementLine(a, b, c)) // if it is not on the line, then it cannot be on the segment
         return false;
 
-    if(  (a->x < c->x) && (c->x < b->x)  )
+    if ((a->x < c->x) && (c->x < b->x))
         return true;
 
-    if(  (b->x < c->x) && (c->x < a->x)  )
+    if ((b->x < c->x) && (c->x < a->x))
         return true;
 
-    if( (a->y < c->y) && (c->y < b->y)  )
+    if ((a->y < c->y) && (c->y < b->y))
         return true;
 
-    if( (b->y < c->y) && (c->y < a->y)  )
+    if ((b->y < c->y) && (c->y < a->y))
         return true;
 
 
     return false;
 }
 
+/*
+ *
+ */
 
-int val(Point *a, Point *b, DQueue<Point *> *in) {
+int val(const Point *a, const Point *b, const std::vector<Point *> *in) {
 
-    if(*a==*b)
+    if (*a == *b)
         return 0;
 
     int count = 0;
-    DQueue<Point *>::Node *myNode = in->getHeadNode();
+    Point *c = NULL;
 
-    while (myNode != NULL) {
+    for (unsigned int i = 0; i < in->size(); i++) {
 
-        if (isOnSegment(a,b,myNode ->data))  //X-----*-----X//
+        c=in->at(i);
+        if (isOnSegment(a, b, c)) //X-----*-----X//
             count++;
-
-
-        if (myNode != in->getTailNode())
-            myNode = myNode->next;
-        else break;
     }
 
     return count;
 
 }
 
-
 void startRecursion() {
 
 
-    for(unsigned int i =0;i<points.size()-1;i++){
+    for (unsigned int i = 0; i < points.size() - 1; i++) {
 
-        for(unsigned int j=i+1; j<points.size(); j++)
+        for (unsigned int j = i + 1; j < points.size(); j++)
 
-            std::cout << points[i] << "and" << points[j] << "has val ="  << val(points[i], points[j], inp) << std::endl;
+            std::cout << points[i] << "and" << points[j] << "has val =" << val(points[i], points[j], &points) << std::endl;
 
     }
 
@@ -159,18 +157,18 @@ int main(int argc, char **argv) {
         std::cout << input;
         /* backup points */
         backup = input->copy();
-        inp=input->copy();
+        
 
         /*finding algorithm*/
         result = find_line(input);
 
         print_result(stdout, result);
-    }else{
+    } else {
         delete input;
         return return_val;
     }
 
-
+    
     // testing val function
     Point * a = new Point();
     a->x = 3;
@@ -180,11 +178,10 @@ int main(int argc, char **argv) {
     b->x = 1;
     b->y = 1;
 
-    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, input) << std::endl;
 
     points = input->getData();
 
-
+    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points) << std::endl;
 
     startRecursion();
 
