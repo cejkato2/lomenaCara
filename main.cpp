@@ -8,19 +8,20 @@
 #define MIN_AMOUNT_POINTS 3
 
 std::vector<Point *> points; // all readed points
+int valMax = 0;
 
 int read_points(FILE *f, DQueue<Point *> *q) {
     int amount;
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<   \
+        std::cerr << "Amount of points has to be greater or equal " <<    \
       MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<   \
+            std::cerr << "Amount of inserted points is lesser than expected" <<    \
         std::endl;
             return LESS_AMOUNT_ERR;
         }
@@ -63,7 +64,7 @@ void print_result(FILE *f, DQueue<Point *> *q) {
  * is the point c on the line which is defined by points a and b ?
  */
 
-bool isElementLine(const Point *a, const Point *b,const Point *c) {
+bool isElementLine(const Point *a, const Point *b, const Point *c) {
 
     if (*a == *c || *b == *c)
         return false;
@@ -103,7 +104,11 @@ bool isOnSegment(const Point *a, const Point *b, const Point *c) {
  *
  */
 
-int val(const Point *a, const Point *b, const std::vector<Point *> *in) {
+int val(const Point *a, const Point *b, const std::vector<Point *> *in,  std::vector<bool> *maskVector) {
+
+
+    if (maskVector->size() != in->size()) // ouch something wrong
+        return -1;
 
     if (*a == *b)
         return 0;
@@ -113,9 +118,14 @@ int val(const Point *a, const Point *b, const std::vector<Point *> *in) {
 
     for (unsigned int i = 0; i < in->size(); i++) {
 
-        c=in->at(i);
-        if (isOnSegment(a, b, c)) //X-----*-----X//
+        if (!maskVector->at(i)) // am I able to work with it ?
+            continue;
+
+        c = in->at(i);
+        if (isOnSegment(a, b, c)) { //X-----*-----X//
+            maskVector[i]=false; // how to store it ?
             count++;
+        }
     }
 
     return count;
@@ -125,13 +135,28 @@ int val(const Point *a, const Point *b, const std::vector<Point *> *in) {
 void startRecursion() {
 
 
+    Point *linePointA;
+    Point *linePointB;
+    int valu = 0;
+
+
+
     for (unsigned int i = 0; i < points.size() - 1; i++) {
 
-        for (unsigned int j = i + 1; j < points.size(); j++)
+        for (unsigned int j = i + 1; j < points.size(); j++) {
 
-            std::cout << points[i] << "and" << points[j] << "has val =" << val(points[i], points[j], &points) << std::endl;
+            std::vector<bool> maskVector(points.size(), true);
+            valu = val(points[i], points[j], &points, &maskVector);
+            std::cout << points[i] << "and" << points[j] << "has val =" << valu << std::endl;
 
+            if (valu >= valMax) {
+                linePointA = points[i];
+                linePointB = points[j];
+                valMax = valu;
+            }
+        }
     }
+    std::cout << "best val is for " << linePointA << " and " << linePointB << std::endl;
 
 }
 
@@ -157,7 +182,7 @@ int main(int argc, char **argv) {
         std::cout << input;
         /* backup points */
         backup = input->copy();
-        
+
 
         /*finding algorithm*/
         result = find_line(input);
@@ -168,7 +193,7 @@ int main(int argc, char **argv) {
         return return_val;
     }
 
-    
+
     // testing val function
     Point * a = new Point();
     a->x = 3;
@@ -180,8 +205,9 @@ int main(int argc, char **argv) {
 
 
     points = input->getData();
+    std::vector<bool> maskVector(points.size(), true);
 
-    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points) << std::endl;
+    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
 
     startRecursion();
 
