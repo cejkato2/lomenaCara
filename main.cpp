@@ -132,15 +132,16 @@ int val(const Point *a, const Point *b, const std::vector<Point *> *in,  std::ve
 
 }
 
-void startRecursion() {
+std::vector<int> startRecursion() {
 
 
-    Point *linePointA;
-    Point *linePointB;
+    int indexPointA;
+    int indexPointB;
     int valu = 0;
+    std::vector<int> returnPoints;
 
 
-
+    // here I combine all possibilities how to construct a segment
     for (unsigned int i = 0; i < points.size() - 1; i++) {
 
         for (unsigned int j = i + 1; j < points.size(); j++) {
@@ -150,14 +151,19 @@ void startRecursion() {
             std::cout << points[i] << "and" << points[j] << "has val =" << valu << std::endl;
 
             if (valu >= valMax) {
-                linePointA = points[i];
-                linePointB = points[j];
+                indexPointA = i;
+                indexPointB = j;
                 valMax = valu;
             }
         }
     }
-    std::cout << "best val is for " << linePointA << " and " << linePointB << std::endl;
+    std::cout << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << std::endl;
 
+    returnPoints.push_back(indexPointA);
+    returnPoints.push_back(indexPointB);
+
+    // that means I will continue with points linePointA/B
+    return returnPoints;
 }
 
 int main(int argc, char **argv) {
@@ -209,7 +215,15 @@ int main(int argc, char **argv) {
 
     std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
 
-    startRecursion();
+    std::vector<int> brokenLine;
+    brokenLine =startRecursion();
+
+    for(unsigned int i=0;i<brokenLine.size();i++){
+
+        std::cout << i+1 << ". point of broken line is " << points[brokenLine[i]] << std::endl;
+
+    }
+
 
     /*--------*/
     /*cleaning*/
