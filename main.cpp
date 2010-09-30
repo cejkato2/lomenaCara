@@ -123,7 +123,7 @@ int val(const Point *a, const Point *b, const std::vector<Point *> *in,  std::ve
 
         c = in->at(i);
         if (isOnSegment(a, b, c)) { //X-----*-----X//
-            maskVector[i]=false; // how to store it ?
+            (*maskVector)[i]=false;  // ok this point is marked as used now
             count++;
         }
     }
