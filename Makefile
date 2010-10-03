@@ -28,3 +28,8 @@ test_dqueue: test_dqueue.cpp dqueue.h
 pack:
 	tar -czf `date "+%F"`snapshot.tar.gz *.cpp *.h *.dat Makefile
       
+plot:
+	if [ -e vystup1.dat -a -e vystup2.dat ]; then \
+	  gnuplot gnuplot.plot; \
+	fi;
+

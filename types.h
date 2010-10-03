@@ -9,6 +9,12 @@
     int x;
     int y;
     Point() {}
+
+    Point(int a, int b) {
+      x = a;
+      y = b;
+    }
+
     Point(Point &o) {
       x = o.x;
       y = o.y;
