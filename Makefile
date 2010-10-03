@@ -15,11 +15,15 @@ program: main.cpp
 clean:
 	rm a.out testdqueue
 
-test:
-	./a.out input.dat
+test: .
 	echo Test for error
-	./a.out input-err1.dat && echo -e ${FAILED} || echo -e ${OK}
-	./a.out input-err2.dat && echo -e ${FAILED} || echo -e ${OK}
+	echo Test1
+	./a.out input-err1.dat 2> /dev/null && echo -e ${FAILED} || echo -e ${OK}
+	echo Test2
+	./a.out input-err2.dat 2> /dev/null && echo -e ${FAILED} || echo -e ${OK}
+	echo Test of alg
+	./test.sh
+	
 
 test_dqueue: test_dqueue.cpp dqueue.h
 	$(CC) $(CFLAGS) -DDEBUG test_dqueue.cpp -o testdqueue
