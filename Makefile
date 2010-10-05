@@ -13,9 +13,9 @@ program: main.cpp
 	$(CC) $(CFLAGS) main.cpp
 
 clean:
-	rm a.out testdqueue
+	rm a.out testdqueue testdata/*.png
 
-test: .
+test: 
 	echo Test for error
 	echo Test1
 	./a.out input-err1.dat 2> /dev/null && echo -e ${FAILED} || echo -e ${OK}
