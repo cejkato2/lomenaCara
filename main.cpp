@@ -10,19 +10,18 @@
 
 std::vector<Point *> points; // all readed points
 
-
 int read_points(FILE *f, DQueue<Point *> *q) {
     int amount;
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<       \
+        std::cerr << "Amount of points has to be greater or equal " <<        \
       MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<       \
+            std::cerr << "Amount of inserted points is lesser than expected" <<        \
         std::endl;
             return LESS_AMOUNT_ERR;
         }
@@ -136,14 +135,15 @@ inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, s
 
 }
 
-void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVector) {
+void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
 
-    if ( maskVector == NULL || points.size() != maskVector->size()) // ouch where I return my output?
+    if (globalMask == NULL || points.size() != globalMask->size()) // ouch where I return my output?
         return;
 
     int indexPointA;
     int indexPointB;
     std::vector<bool>* bestMaskVector = NULL; // actual mask vector in this step of recursion
+    std::vector<bool>* tempMask = NULL;
     int valu = 0;
     int valMax = -1;
 
@@ -152,20 +152,20 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
     // here I combine all possibilities how to construct a segment
     for (unsigned int i = 0; i < points.size() - 1; i++) {
 
-        if (!maskVector->at(i)) // can I work with this point ?
+        if (!globalMask->at(i)) // can I work with this point ?
             continue;
 
         for (unsigned int j = i + 1; j < points.size(); j++) {
 
-            if (!maskVector->at(i)) // can I work with this point ?
+            if (!globalMask->at(i)) // can I work with this point ?
                 continue;
 
-            std::vector<bool>* myMaskVector = new std::vector<bool>(*maskVector); // here I make a copy of global(for recursion) maskVector
-            valu = val(points[i], points[j], &points, myMaskVector); // now I count a val function
+            tempMask = new std::vector<bool>(*globalMask); // here I make a deep copy of globalMask
+            valu = val(points[i], points[j], &points, tempMask); // now I count a val function
             std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
             if (valu > valMax) {
-                
+
                 indexPointA = i;
                 indexPointB = j;
                 valMax = valu;
@@ -173,12 +173,12 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
                 if (bestMaskVector != NULL)
                     delete bestMaskVector;
 
-                bestMaskVector = myMaskVector;
+                bestMaskVector = tempMask;
                 (*bestMaskVector)[i] = false; // this point determine segment and is used
                 (*bestMaskVector)[j] = false; // this point determine segment and is used
-                
+
             } else {
-                delete myMaskVector;
+                delete tempMask;
             }
         }
     }
@@ -186,22 +186,34 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
 
 
     if (bestMaskVector != NULL) {
-        delete maskVector;
-        maskVector = bestMaskVector;
+        delete globalMask;
+        globalMask = bestMaskVector;
     }
-
-
 
     returnVector.push_back(indexPointA);
     returnVector.push_back(indexPointB);
 
-   
+
+    if (valMax == 0) // there are no points on segments at all
+    {
+        unsigned int count = 0;
+        for (unsigned int u = 0; u < points.size(); u++) {
+            if (globalMask->at(u)) {
+                returnVector.push_back(u);
+                count++;
+            }
+        }
+        std::cout << "there were " << count << " points out of any segment" << std::endl;
+        delete globalMask;
+        return;
+    }
+
 
 
     // here I count points which are not used
     int notUsed = 0;
     for (unsigned int u = 0; u < points.size(); u++) {
-        if (maskVector->at(u)) {
+        if (globalMask->at(u)) {
             notUsed++;
             indexPointB = indexPointA;
             indexPointA = u;
@@ -213,23 +225,25 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
     }
 
 
-    
+
     switch (notUsed) {
         case 0: return;
         case 1:
         {
             returnVector.push_back(indexPointA);
+            delete globalMask;
             return;
         }
         case 2:
         {
             returnVector.push_back(indexPointA);
             returnVector.push_back(indexPointB);
+            delete globalMask;
             return;
         }
         default:
         {
-            startRecursion(returnVector, maskVector);
+            startRecursion(returnVector, globalMask);
             return;
         }
     }
@@ -270,7 +284,7 @@ int main(int argc, char **argv) {
     }
 
 
- 
+
 
     points = input->getData();
     std::vector<Point *>::iterator it;
@@ -282,22 +296,30 @@ int main(int argc, char **argv) {
     output_stream.close();
 
 
-    std::vector<bool> maskVector(points.size(), true);
 
-   
+
+
 
     std::vector<int> brokenLine;
-    //brokenLine.push_back(123456);
+
     std::vector<bool> *mask = new std::vector<bool>(points.size(), true);
+
+    std::cout << "------------------START OF CALCULATION----------------" << std::endl;
+
     startRecursion(brokenLine, mask);
 
 
-    std::cout << "vypocet ukoncen " << std::endl;
-//
-//    for(unsigned int i = 0; i <brokenLine.size(); i++){
-//        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
-//
-//    }
+
+    std::cout << "------------------END OF CALCULATION----------------" << std::endl;
+    std::cout << "Worked with " << points.size() << " points" << std::endl;
+    std::cout << "Line consists of " << brokenLine.size() << " points" << std::endl;
+
+
+    //
+    //    for(unsigned int i = 0; i <brokenLine.size(); i++){
+    //        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
+    //
+    //    }
 
 
     output_stream.open("vystup2.dat");
@@ -308,13 +330,13 @@ int main(int argc, char **argv) {
     }
     output_stream.close();
 
-    
+
 
     /*--------*/
     /*cleaning*/
     /*--------*/
 
- 
+
     delete input;
 
     if (return_val == SUCCESS) {
