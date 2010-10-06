@@ -165,7 +165,7 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
             std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
             if (valu > valMax) {
-                std::cout << "ok2 -------------------------------------------" << std::endl;
+                
                 indexPointA = i;
                 indexPointB = j;
                 valMax = valu;
@@ -176,7 +176,7 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
                 bestMaskVector = myMaskVector;
                 (*bestMaskVector)[i] = false; // this point determine segment and is used
                 (*bestMaskVector)[j] = false; // this point determine segment and is used
-                std::cout << "ok3 -------------------------------------------" << std::endl;
+                
             } else {
                 delete myMaskVector;
             }
@@ -213,7 +213,7 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
     }
 
 
-    std::cout << "ok -------------------------------------------" << std::endl;
+    
     switch (notUsed) {
         case 0: return;
         case 1:
@@ -270,10 +270,7 @@ int main(int argc, char **argv) {
     }
 
 
-    // testing val function
-    Point * a = new Point(3, 1);
-
-    Point * b = new Point(1, 1);
+ 
 
     points = input->getData();
     std::vector<Point *>::iterator it;
@@ -287,21 +284,20 @@ int main(int argc, char **argv) {
 
     std::vector<bool> maskVector(points.size(), true);
 
-    std::cerr << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
+   
 
     std::vector<int> brokenLine;
     //brokenLine.push_back(123456);
     std::vector<bool> *mask = new std::vector<bool>(points.size(), true);
     startRecursion(brokenLine, mask);
 
-   // delete mask;
 
     std::cout << "vypocet ukoncen " << std::endl;
-
-    for(unsigned int i = 0; i <brokenLine.size(); i++){
-        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
-
-    }
+//
+//    for(unsigned int i = 0; i <brokenLine.size(); i++){
+//        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
+//
+//    }
 
 
     output_stream.open("vystup2.dat");
@@ -318,8 +314,7 @@ int main(int argc, char **argv) {
     /*cleaning*/
     /*--------*/
 
-    delete a;
-    delete b;
+ 
     delete input;
 
     if (return_val == SUCCESS) {
