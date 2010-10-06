@@ -162,7 +162,7 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMas
 
             tempMask = new std::vector<bool>(*globalMask); // here I make a deep copy of globalMask
             valu = val(points[i], points[j], &points, tempMask); // now I count a val function
-            std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
+          //  std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
             if (valu > valMax) {
 
@@ -182,7 +182,7 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMas
             }
         }
     }
-    std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << std::endl;
+    std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << " ,valMax = "<< valMax << std::endl;
 
 
     if (bestMaskVector != NULL) {
