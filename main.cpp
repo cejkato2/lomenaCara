@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <iostream>
+#include <fstream>
 #include "types.h"
 #include "dqueue.h"
 #include "search.h"
@@ -157,7 +158,7 @@ void startRecursion(std::vector<int> *returnVector, std::vector<bool> *maskVecto
 
             std::vector<bool> myMaskVector = *maskVector;
             valu = val(points[i], points[j], &points, &myMaskVector);
-            std::cout << points[i] << "and" << points[j] << "has val =" << valu << std::endl;
+            std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
             if (valu >= valMax) {
                 indexPointA = i;
@@ -169,7 +170,7 @@ void startRecursion(std::vector<int> *returnVector, std::vector<bool> *maskVecto
             }
         }
     }
-    std::cout << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << std::endl;
+    std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << std::endl;
 
     *maskVector = bestMaskVector;
 
@@ -220,7 +221,7 @@ int main(int argc, char **argv) {
         }
     }
 
-    DQueue<Point *> *result, *input, *backup;
+    DQueue<Point *> *input, *backup;
 
     /*init of input queue*/
     input = new DQueue<Point *>();
@@ -228,15 +229,15 @@ int main(int argc, char **argv) {
     /*get points from stdin*/
     return_val = read_points(input_file, input);
     if (return_val == SUCCESS) {
-        std::cout << input;
+        std::cerr << input;
         /* backup points */
         backup = input->copy();
+//
+//
+//        /*finding algorithm*/
+//        result = find_line(input);
 
-
-        /*finding algorithm*/
-        result = find_line(input);
-
-        print_result(stdout, result);
+//        print_result(stdout, result);
     } else {
         delete input;
         return return_val;
@@ -244,29 +245,35 @@ int main(int argc, char **argv) {
 
 
     // testing val function
-    Point * a = new Point();
-    a->x = 3;
-    a->y = 1;
+    Point * a = new Point(3, 1);
 
-    Point * b = new Point();
-    b->x = 1;
-    b->y = 1;
-
+    Point * b = new Point(1, 1);
 
     points = input->getData();
+    std::vector<Point *>::iterator it;
+    std::ofstream output_stream;
+    output_stream.open("vystup1.dat");
+    for (it=points.begin(); it!=points.end(); ++it) {
+      output_stream << (*it)->x << " " << (*it)->y << std::endl;
+    }
+    output_stream.close();
+      
+
     std::vector<bool> maskVector(points.size(), true);
 
-    std::cout << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
+    std::cerr << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
 
     std::vector<int> brokenLine;
     std::vector<bool> mask(points.size(), true);
     startRecursion(&brokenLine, &mask);
 
+    output_stream.open("vystup2.dat");
     for (unsigned int i = 0; i < brokenLine.size(); i++) {
 
-        std::cout << i + 1 << ". point of broken line is " << points[brokenLine[i]] << std::endl;
-
+        std::cerr << i + 1 << ". point of broken line is " << points[brokenLine[i]] << std::endl;
+        output_stream << points[brokenLine[i]]->x << " " << points[brokenLine[i]]->y << std::endl;
     }
+    output_stream.close();
 
 
     /*--------*/
@@ -278,7 +285,7 @@ int main(int argc, char **argv) {
     delete input;
 
     if (return_val == SUCCESS) {
-        delete result;
+//        delete result;
         if (backup != NULL) {
             while (!backup->isEmpty()) {
                 delete backup->getHead();
