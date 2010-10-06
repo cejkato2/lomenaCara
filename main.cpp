@@ -135,7 +135,7 @@ int val(const Point *a, const Point *b, const std::vector<Point *> *in, std::vec
 
 void startRecursion(std::vector<int> *returnVector, std::vector<bool> *maskVector) {
 
-    if (returnVector == NULL || maskVector == NULL) // ouch where I return my output?
+    if (returnVector == NULL || maskVector == NULL || points.size() != maskVector->size()) // ouch where I return my output?
         return;
 
     int indexPointA;
