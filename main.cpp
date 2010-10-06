@@ -119,7 +119,12 @@ inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, s
 
 }
 
-void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
+void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
+
+    
+    bool finished = false;
+    while(!finished){
+
 
     if (globalMask == NULL || points.size() != globalMask->size()) // ouch where I return my output?
         return;
@@ -189,7 +194,9 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMas
         }
         std::cout << "there were " << count << " points out of any segment" << std::endl;
         delete globalMask;
-        return;
+       // return;
+        finished = true;
+        continue;
     }
 
 
@@ -211,25 +218,38 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *globalMas
 
 
     switch (notUsed) {
-        case 0: return;
+        case 0: {
+            //return;
+            finished = true;
+            break;
+             }
         case 1:
         {
             returnVector.push_back(indexPointA);
             delete globalMask;
-            return;
+            //return;
+            finished = true;
+            break;
+            
         }
         case 2:
         {
             returnVector.push_back(indexPointA);
             returnVector.push_back(indexPointB);
             delete globalMask;
-            return;
+           // return;
+            finished = true;
+            break;
         }
         default:
         {
-            startRecursion(returnVector, globalMask);
-            return;
+          //  startRecursion(returnVector, globalMask);
+          //  return;
+
         }
+    }
+
+
     }
 
 }
@@ -290,7 +310,7 @@ int main(int argc, char **argv) {
 
     std::cout << "------------------START OF CALCULATION----------------" << std::endl;
 
-    startRecursion(brokenLine, mask);
+    calculate(brokenLine, mask);
 
 
 
