@@ -15,13 +15,13 @@ int read_points(FILE *f, DQueue<Point *> *q) {
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<        \
+        std::cerr << "Amount of points has to be greater or equal " <<         \
       MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<        \
+            std::cerr << "Amount of inserted points is lesser than expected" <<         \
         std::endl;
             return LESS_AMOUNT_ERR;
         }
@@ -137,138 +137,146 @@ inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, s
 
 void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
 
-    
-    bool finished = false;
-    while(!finished){
 
-
-    if (globalMask == NULL || points.size() != globalMask->size()) // ouch where I return my output?
-        return;
 
     int indexPointA;
     int indexPointB;
-    std::vector<bool>* bestMaskVector = NULL; // actual mask vector in this step of recursion
-    std::vector<bool>* tempMask = NULL;
-    int valu = 0;
-    int valMax = -1;
+    std::vector<bool>* bestMaskVector;
+    std::vector<bool>* tempMask;
+    int valu;
+    int valMax;
 
 
+    bool finished = false;
+    while (!finished) {
 
-    // here I combine all possibilities how to construct a segment
-    for (unsigned int i = 0; i < points.size() - 1; i++) {
+        bestMaskVector = NULL;
+        tempMask = NULL;
+        valu = 0;
+        valMax = -1;
 
-        if (!globalMask->at(i)) // can I work with this point ?
-            continue;
+        if (globalMask == NULL || points.size() != globalMask->size()) // ouch where I return my output?
+            return;
 
-        for (unsigned int j = i + 1; j < points.size(); j++) {
+        // here I combine all possibilities how to construct a segment
+        for (unsigned int i = 0; i < points.size() - 1; i++) {  // divide into paralel computation
 
             if (!globalMask->at(i)) // can I work with this point ?
                 continue;
 
-            tempMask = new std::vector<bool>(*globalMask); // here I make a deep copy of globalMask
-            valu = val(points[i], points[j], &points, tempMask); // now I count a val function
-          //  std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
+            for (unsigned int j = i + 1; j < points.size(); j++) { 
 
-            if (valu > valMax) {
+                if (!globalMask->at(i)) // can I work with this point ?
+                    continue;
 
-                indexPointA = i;
-                indexPointB = j;
-                valMax = valu;
+                tempMask = new std::vector<bool>(*globalMask); // here I make a deep copy of globalMask
+                valu = val(points[i], points[j], &points, tempMask); // now I count a val function,
+                //  std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
-                if (bestMaskVector != NULL)
-                    delete bestMaskVector;
+                if (valu > valMax) {
 
-                bestMaskVector = tempMask;
-                (*bestMaskVector)[i] = false; // this point determine segment and is used
-                (*bestMaskVector)[j] = false; // this point determine segment and is used
+                    indexPointA = i;
+                    indexPointB = j;
+                    valMax = valu;
 
-            } else {
-                delete tempMask;
+                    if (bestMaskVector != NULL)
+                        delete bestMaskVector;
+
+                    bestMaskVector = tempMask;
+                    (*bestMaskVector)[i] = false; // this point determine segment and is used
+                    (*bestMaskVector)[j] = false; // this point determine segment and is used
+
+                } else {
+                    delete tempMask;
+                }
             }
         }
-    }
-    std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << " ,valMax = "<< valMax << std::endl;
+        std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << " ,valMax = " << valMax << std::endl;
 
 
-    if (bestMaskVector != NULL) {
-        delete globalMask;
-        globalMask = bestMaskVector;
-    }
+        if (bestMaskVector != NULL) {
+            delete globalMask;
+            globalMask = bestMaskVector;
+        }
 
-    returnVector.push_back(indexPointA);
-    returnVector.push_back(indexPointB);
+        returnVector.push_back(indexPointA);
+        returnVector.push_back(indexPointB);
 
 
-    if (valMax == 0) // there are no points on segments at all
-    {
-        unsigned int count = 0;
+        if (valMax == 0) // there are no points on segments at all
+        {
+            unsigned int count = 0;
+            for (unsigned int u = 0; u < points.size(); u++) {
+                if (globalMask->at(u)) {
+                    returnVector.push_back(u);
+                    count++;
+                }
+            }
+            std::cout << "there were " << count << " points out of any segment" << std::endl;
+            delete globalMask;
+            // return;
+            finished = true;
+            continue;
+        }
+
+
+
+        // here I count points which are not used
+        int notUsed = 0;
         for (unsigned int u = 0; u < points.size(); u++) {
             if (globalMask->at(u)) {
-                returnVector.push_back(u);
-                count++;
+                notUsed++;
+                indexPointB = indexPointA;
+                indexPointA = u;
+            }
+
+            if (notUsed > 2) 
+                break;
+
+        }
+
+
+
+        switch (notUsed) {
+            case 0:
+            {
+                //return;
+                finished = true;
+                break;
+            }
+            case 1:
+            {
+                returnVector.push_back(indexPointA);
+                delete globalMask;
+                //return;
+                finished = true;
+                break;
+
+            }
+            case 2:
+            {
+                returnVector.push_back(indexPointA);
+                returnVector.push_back(indexPointB);
+                delete globalMask;
+                // return;
+                finished = true;
+                break;
+            }
+            default:
+            {
+                //  startRecursion(returnVector, globalMask);
+                //  return;
+
             }
         }
-        std::cout << "there were " << count << " points out of any segment" << std::endl;
-        delete globalMask;
-       // return;
-        finished = true;
-        continue;
-    }
-
-
-
-    // here I count points which are not used
-    int notUsed = 0;
-    for (unsigned int u = 0; u < points.size(); u++) {
-        if (globalMask->at(u)) {
-            notUsed++;
-            indexPointB = indexPointA;
-            indexPointA = u;
-        }
-
-        if (notUsed > 2)
-            break;
-
-    }
-
-
-
-    switch (notUsed) {
-        case 0: {
-            //return;
-            finished = true;
-            break;
-             }
-        case 1:
-        {
-            returnVector.push_back(indexPointA);
-            delete globalMask;
-            //return;
-            finished = true;
-            break;
-            
-        }
-        case 2:
-        {
-            returnVector.push_back(indexPointA);
-            returnVector.push_back(indexPointB);
-            delete globalMask;
-           // return;
-            finished = true;
-            break;
-        }
-        default:
-        {
-          //  startRecursion(returnVector, globalMask);
-          //  return;
-
-        }
-    }
 
 
     }
 
 }
+
+
+
 
 int main(int argc, char **argv) {
     int return_val = SUCCESS;

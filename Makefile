@@ -29,6 +29,12 @@ test_dqueue: test_dqueue.cpp dqueue.h
 	$(CC) $(CFLAGS) -DDEBUG test_dqueue.cpp -o testdqueue
 	./testdqueue
 
+
+test_state: testState.cpp State.h State.cpp
+	$(CC) $(CFLAGS) -DDEBUG testState.cpp State.* -o testState
+	./testState
+
+
 pack:
 	tar -czf `date "+%F"`snapshot.tar.gz *.cpp *.h *.dat Makefile
       
