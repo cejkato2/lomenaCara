@@ -9,20 +9,20 @@
 #define MIN_AMOUNT_POINTS 3
 
 std::vector<Point *> points; // all readed points
-
+int valMax = 0;
 
 int read_points(FILE *f, DQueue<Point *> *q) {
     int amount;
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<       \
+        std::cerr << "Amount of points has to be greater or equal " <<      \
       MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<       \
+            std::cerr << "Amount of inserted points is lesser than expected" <<      \
         std::endl;
             return LESS_AMOUNT_ERR;
         }
@@ -35,22 +35,6 @@ int read_points(FILE *f, DQueue<Point *> *q) {
     return SUCCESS;
 }
 
-DQueue<Point *> *find_line(DQueue<Point *> *in) {
-    DQueue<Point *> *q = new DQueue<Point *>();
-    /*
-     * TODO
-     * algorithm for finding line
-     *
-     * 1) copy 'in' queue to temp
-     * iterate over temp:
-     *   2) take point A from temp
-     *   3) count val for A and every X from in
-     *   4) add all AXs to ordered stack
-     * 5) from the ordered stack take as many AXs
-     *    as needed to cover all points
-     */
-    return q;
-}
 
 void print_result(FILE *f, DQueue<Point *> *q) {
 
@@ -65,7 +49,7 @@ void print_result(FILE *f, DQueue<Point *> *q) {
  * is the point c on the line which is defined by points a and b ?
  */
 
-inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
+bool isElementLine(const Point *a, const Point *b, const Point *c) {
 
     if (*a == *c || *b == *c)
         return false;
@@ -80,7 +64,7 @@ inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
 /*
  * is the point c on the segment between points a and b ?
  */
-inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
+bool isOnSegment(const Point *a, const Point *b, const Point *c) {
 
     if (!isElementLine(a, b, c)) // if it is not on the line, then it cannot be on the segment
         return false;
@@ -105,10 +89,7 @@ inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
  *
  */
 
-inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, std::vector<bool> *maskVector) {
-
-
-
+int val(const Point *a, const Point *b, const std::vector<Point *> *in, std::vector<bool> *maskVector) {
 
 
     if (maskVector->size() != in->size()) // ouch something wrong
@@ -136,66 +117,49 @@ inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, s
 
 }
 
-void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVector) {
+void startRecursion(std::vector<int> *returnVector, std::vector<bool> *maskVector) {
 
-    if ( maskVector == NULL || points.size() != maskVector->size()) // ouch where I return my output?
+    if (returnVector == NULL || maskVector == NULL) // ouch where I return my output?
         return;
 
     int indexPointA;
     int indexPointB;
-    std::vector<bool>* bestMaskVector = NULL; // actual mask vector in this step of recursion
+    std::vector<bool> bestMaskVector;
     int valu = 0;
-    int valMax = -1;
 
 
 
     // here I combine all possibilities how to construct a segment
     for (unsigned int i = 0; i < points.size() - 1; i++) {
 
-        if (!maskVector->at(i)) // can I work with this point ?
+        if (!maskVector->at(i))
             continue;
 
         for (unsigned int j = i + 1; j < points.size(); j++) {
 
-            if (!maskVector->at(i)) // can I work with this point ?
+            if (!maskVector->at(i))
                 continue;
 
-            std::vector<bool>* myMaskVector = new std::vector<bool>(*maskVector); // here I make a copy of global(for recursion) maskVector
-            valu = val(points[i], points[j], &points, myMaskVector); // now I count a val function
+            std::vector<bool> myMaskVector = *maskVector;
+            valu = val(points[i], points[j], &points, &myMaskVector);
             std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
 
-            if (valu > valMax) {
-                std::cout << "ok2 -------------------------------------------" << std::endl;
+            if (valu >= valMax) {
                 indexPointA = i;
                 indexPointB = j;
                 valMax = valu;
-
-                if (bestMaskVector != NULL)
-                    delete bestMaskVector;
-
                 bestMaskVector = myMaskVector;
-                (*bestMaskVector)[i] = false; // this point determine segment and is used
-                (*bestMaskVector)[j] = false; // this point determine segment and is used
-                std::cout << "ok3 -------------------------------------------" << std::endl;
-            } else {
-                delete myMaskVector;
+                bestMaskVector[i] = false; // this point determine segment and is used
+                bestMaskVector[j] = false; // this point determine segment and is used
             }
         }
     }
     std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << std::endl;
 
+    *maskVector = bestMaskVector;
 
-    if (bestMaskVector != NULL) {
-        delete maskVector;
-        maskVector = bestMaskVector;
-    }
-
-
-
-    returnVector.push_back(indexPointA);
-    returnVector.push_back(indexPointB);
-
-   
+    returnVector->push_back(indexPointA);
+    returnVector->push_back(indexPointB);
 
 
     // here I count points which are not used
@@ -207,31 +171,25 @@ void startRecursion(std::vector<int> &returnVector, std::vector<bool> *maskVecto
             indexPointA = u;
         }
 
-        if (notUsed > 2)
+        if(notUsed>2)
             break;
 
     }
 
-
-    std::cout << "ok -------------------------------------------" << std::endl;
     switch (notUsed) {
         case 0: return;
         case 1:
         {
-            returnVector.push_back(indexPointA);
+            returnVector->push_back(indexPointA);
             return;
         }
         case 2:
         {
-            returnVector.push_back(indexPointA);
-            returnVector.push_back(indexPointB);
+            returnVector->push_back(indexPointA);
+            returnVector->push_back(indexPointB);
             return;
         }
-        default:
-        {
-            startRecursion(returnVector, maskVector);
-            return;
-        }
+        default: startRecursion(returnVector, maskVector);
     }
 
 }
@@ -258,12 +216,12 @@ int main(int argc, char **argv) {
         std::cerr << input;
         /* backup points */
         backup = input->copy();
-        //
-        //
-        //        /*finding algorithm*/
-        //        result = find_line(input);
+//
+//
+//        /*finding algorithm*/
+//        result = find_line(input);
 
-        //        print_result(stdout, result);
+//        print_result(stdout, result);
     } else {
         delete input;
         return return_val;
@@ -279,40 +237,28 @@ int main(int argc, char **argv) {
     std::vector<Point *>::iterator it;
     std::ofstream output_stream;
     output_stream.open("vystup1.dat");
-    for (it = points.begin(); it != points.end(); ++it) {
-        output_stream << (*it)->x << " " << (*it)->y << std::endl;
+    for (it=points.begin(); it!=points.end(); ++it) {
+      output_stream << (*it)->x << " " << (*it)->y << std::endl;
     }
     output_stream.close();
-
+      
 
     std::vector<bool> maskVector(points.size(), true);
 
     std::cerr << "Count of points on the line " << a << " " << b << " is " << val(a, b, &points, &maskVector) << std::endl;
 
     std::vector<int> brokenLine;
-    //brokenLine.push_back(123456);
-    std::vector<bool> *mask = new std::vector<bool>(points.size(), true);
-    startRecursion(brokenLine, mask);
-
-   // delete mask;
-
-    std::cout << "vypocet ukoncen " << std::endl;
-
-    for(unsigned int i = 0; i <brokenLine.size(); i++){
-        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
-
-    }
-
+    std::vector<bool> mask(points.size(), true);
+    startRecursion(&brokenLine, &mask);
 
     output_stream.open("vystup2.dat");
     for (unsigned int i = 0; i < brokenLine.size(); i++) {
 
-        std::cerr << i << ". point of broken line is " << points[brokenLine[i]] << std::endl;
+        std::cerr << i + 1 << ". point of broken line is " << points[brokenLine[i]] << std::endl;
         output_stream << points[brokenLine[i]]->x << " " << points[brokenLine[i]]->y << std::endl;
     }
     output_stream.close();
 
-    
 
     /*--------*/
     /*cleaning*/
@@ -323,7 +269,7 @@ int main(int argc, char **argv) {
     delete input;
 
     if (return_val == SUCCESS) {
-        //        delete result;
+//        delete result;
         if (backup != NULL) {
             while (!backup->isEmpty()) {
                 delete backup->getHead();

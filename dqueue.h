@@ -65,6 +65,22 @@ public:
     return last;
   }
 
+  void remove(t val) {
+    Node *n = first;
+    if (size!=0) {
+      while (n!=NULL) {
+        if (n->data==val) {
+          /* found */ 
+          n->prev->next = n->next;
+          n->next->prev = n->prev;
+          delete n;
+          break;
+        }
+        n = n->next;
+      }
+    }
+  }
+
   void insertSorted(t val) {
     Node *n = new Node(val);
     if (size==0) {
