@@ -83,176 +83,78 @@ inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
     return false;
 }
 
-/*
- *
- */
-
-inline int val(const Point *a, const Point *b, const std::vector<Point *> *in, std::vector<bool> *maskVector) {
-
-
-
-
-
-    if (maskVector->size() != in->size()) // ouch something wrong
-        return -1;
-
-    if (*a == *b)
-        return 0;
-
-    int count = 0;
-    Point *c = NULL;
-
-    for (unsigned int i = 0; i < in->size(); i++) {
-
-        if (!maskVector->at(i)) // am I able to work with it ?
-            continue;
-
-        c = in->at(i);
-        if (isOnSegment(a, b, c)) { //X-----*-----X//
-            (*maskVector)[i] = false; // ok this point is marked as used now
-            count++;
-        }
-    }
-
-    return count;
-
+void print(std::vector<Point *> *v) {
+  std::vector<Point *>::iterator it;
+  for (it=v->begin(); it!=v->end(); ++it) {
+    std::cout << " " << *it;
+  }
+  std::cout << std::endl;
 }
 
-void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
+int countBreaks(std::vector<Point *> *l) {
+  std::vector<Point *>::iterator it;
+  int amount = 0;
+  Point *a = *(l->begin());
+  Point *b = *(l->begin()++);
+  Point *c;
 
-    bool finished = false;
-    while(!finished){
-
-
-    if (globalMask == NULL || points.size() != globalMask->size()) // ouch where I return my output?
-        return;
-
-    int indexPointA;
-    int indexPointB;
-    std::vector<bool>* bestMaskVector = NULL; // actual mask vector in this step of recursion
-    std::vector<bool>* tempMask = NULL;
-    int valu = 0;
-    int valMax = -1;
-
-
-
-    // here I combine all possibilities how to construct a segment
-    for (unsigned int i = 0; i < points.size() - 1; i++) {
-
-        if (!globalMask->at(i)) // can I work with this point ?
-            continue;
-
-        for (unsigned int j = i + 1; j < points.size(); j++) {
-
-            if (!globalMask->at(i)) // can I work with this point ?
-                continue;
-
-            tempMask = new std::vector<bool>(*globalMask); // here I make a deep copy of globalMask
-            valu = val(points[i], points[j], &points, tempMask); // now I count a val function
-          //  std::cerr << points[i] << " and " << points[j] << " has val = " << valu << std::endl;
-
-            if (valu > valMax) {
-
-                indexPointA = i;
-                indexPointB = j;
-                valMax = valu;
-
-                if (bestMaskVector != NULL)
-                    delete bestMaskVector;
-
-                bestMaskVector = tempMask;
-                (*bestMaskVector)[i] = false; // this point determine segment and is used
-                (*bestMaskVector)[j] = false; // this point determine segment and is used
-
-            } else {
-                delete tempMask;
-            }
-        }
+  for (it=l->begin()++++; it!=l->end(); ++it) {
+    c = *it;
+    if (isOnSegment( a, c, b ) == false) {
+      a = b;
+      b = c;
+      amount++;
+      if (it == l->end()) {
+        break;
+      }
+    } else {
+      b = c;
     }
-    std::cerr << "best val is for " << points[indexPointA] << " and " << points[indexPointB] << " ,valMax = "<< valMax << std::endl;
+  }
+  return amount;    
+}
 
-
-    if (bestMaskVector != NULL) {
-        delete globalMask;
-        globalMask = bestMaskVector;
+void remove_item(std::vector<Point *> *s, const Point *val) {
+  std::vector<Point *>::iterator it;
+  for (it=s->begin(); it!=s->end(); ++it) {
+    if (*it==val) {
+      s->erase(it);
+      break;
     }
+  }
+}
 
-    returnVector.push_back(indexPointA);
-    returnVector.push_back(indexPointB);
-
-
-    if (valMax == 0) // there are no points on segments at all
-    {
-        unsigned int count = 0;
-        for (unsigned int u = 0; u < points.size(); u++) {
-            if (globalMask->at(u)) {
-                returnVector.push_back(u);
-                count++;
-            }
+void permutate(std::vector<Point *> *s, std::vector<Point *> *f, std::vector<Point *> *br_line) {
+  std::vector<Point *>::iterator it;
+  if (s->empty()==false) {
+    for (it=s->begin(); it!=s->end(); ++it) {
+      std::vector<Point *> temp = *s;
+      f->push_back(*it);
+      remove_item(&temp, *it);
+      if (temp.empty()==true) {
+        if (br_line->empty() == true) {
+          //init state
+          *br_line = *f;
+        } else {
+          int old_size = countBreaks(br_line);
+          int new_size = countBreaks(f);
+          std::cout << old_size << " / " << new_size << " ";
+          if (new_size<old_size) {
+            *br_line = *f;
+          }
         }
-        std::cout << "there were " << count << " points out of any segment" << std::endl;
-        delete globalMask;
-       // return;
-        finished = true;
-        continue;
+        //DEBUG
+        print(f);
+      } else {
+        permutate(&temp, f, br_line);
+      }
+      remove_item(f, *it);
     }
-
-
-
-    // here I count points which are not used
-    int notUsed = 0;
-    for (unsigned int u = 0; u < points.size(); u++) {
-        if (globalMask->at(u)) {
-            notUsed++;
-            indexPointB = indexPointA;
-            indexPointA = u;
-        }
-
-        if (notUsed > 2)
-            break;
-
-    }
-
-
-
-    switch (notUsed) {
-        case 0: {
-            //return;
-            finished = true;
-            break;
-             }
-        case 1:
-        {
-            returnVector.push_back(indexPointA);
-            delete globalMask;
-            //return;
-            finished = true;
-            break;
-            
-        }
-        case 2:
-        {
-            returnVector.push_back(indexPointA);
-            returnVector.push_back(indexPointB);
-            delete globalMask;
-           // return;
-            finished = true;
-            break;
-        }
-        default:
-        {
-          //  startRecursion(returnVector, globalMask);
-          //  return;
-
-        }
-    }
-
-
-    }
-
+  }
 }
 
 int main(int argc, char **argv) {
+
     int return_val = SUCCESS;
 
     FILE *input_file = stdin;
@@ -275,11 +177,6 @@ int main(int argc, char **argv) {
         /* backup points */
         backup = input->copy();
         //
-        //
-        //        /*finding algorithm*/
-        //        result = find_line(input);
-
-        //        print_result(stdout, result);
     } else {
         delete input;
         return return_val;
@@ -296,36 +193,20 @@ int main(int argc, char **argv) {
     }
     output_stream.close();
 
-    std::vector<int> brokenLine;
 
-    std::vector<bool> *mask = new std::vector<bool>(points.size(), true);
-
-    std::cout << "------------------START OF CALCULATION----------------" << std::endl;
-
-    calculate(brokenLine, mask);
-
-
-
-    std::cout << "------------------END OF CALCULATION----------------" << std::endl;
-    std::cout << "Worked with " << points.size() << " points" << std::endl;
-    std::cout << "Line consists of " << brokenLine.size() << " points" << std::endl;
-
-
-    //
-    //    for(unsigned int i = 0; i <brokenLine.size(); i++){
-    //        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
-    //
-    //    }
+    std::vector<Point *> temp_results;
+    std::vector<Point *> min_line;
+    
+    permutate(&points, &temp_results, &min_line);
+    std::cout << "min_line - size: " << countBreaks(&min_line) << std::endl;
+    print(&min_line);
 
 
     output_stream.open("vystup2.dat");
-    for (unsigned int i = 0; i < brokenLine.size(); i++) {
-
-        std::cerr << i << ". point of broken line is " << points[brokenLine[i]] << std::endl;
-        output_stream << points[brokenLine[i]]->x << " " << points[brokenLine[i]]->y << std::endl;
+    for (it=min_line.begin(); it!=min_line.end(); ++it) {
+        output_stream << (*it)->x << " " << (*it)->y << std::endl;
     }
     output_stream.close();
-
 
 
 
