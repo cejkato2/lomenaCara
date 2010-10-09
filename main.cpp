@@ -43,8 +43,12 @@ void print_result(FILE *f, DQueue<Point *> *q) {
     }
 }
 
-/*
- * is the point c on the line which is defined by points a and b ?
+/**
+ * are three different points a,b,c on a line ?
+ * @param a first point
+ * @param b second point
+ * @param c third point
+ * @return true if they are on a line, else false
  */
 
 inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
@@ -59,8 +63,12 @@ inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
     else return false;
 }
 
-/*
+/**
  * is the point c on the segment between points a and b ?
+ * @param a first point
+ * @param b second point
+ * @param c middle point
+ * @return
  */
 inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
 
@@ -91,25 +99,29 @@ void print(std::vector<Point *> *v) {
   std::cout << std::endl;
 }
 
+/**
+ * counts a count of breaks on the line defined by sequence of points defined by vector l
+ * @param l sequence of points defining [broken] line
+ * @return count of breaks
+ */
 int countBreaks(std::vector<Point *> *l) {
-  std::vector<Point *>::iterator it;
-  int amount = 0;
-  Point *a = *(l->begin());
-  Point *b = *(l->begin()++);
-  Point *c;
 
-  for (it=l->begin()++++; it!=l->end(); ++it) {
-    c = *it;
-    if (isOnSegment( a, c, b ) == false) {
-      a = b;
-      b = c;
-      amount++;
-      if (it == l->end()) {
-        break;
-      }
-    } else {
-      b = c;
-    }
+    if(l->size() < 3)
+        return 0;
+
+  int amount = 0;
+  Point *a,*b,*c;
+
+  for (std::vector<Point *>::iterator it=l->begin()+2; it!=l->end(); ++it) {
+
+      a=*(it-2); // first point
+      b=*it; // second point
+      c=*(it-1); // the middle one
+
+   // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
+    if (!isOnSegment( a, b, c ))
+        amount++;
+
   }
   return amount;    
 }
