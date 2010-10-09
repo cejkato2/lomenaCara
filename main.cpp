@@ -9,6 +9,7 @@
 #define MIN_AMOUNT_POINTS 3
 
 std::vector<Point *> points; // all readed points
+int breakCount=0;
 
 int read_points(FILE *f, DQueue<Point *> *q) {
     int amount;
@@ -179,6 +180,7 @@ void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
 
     returnVector.push_back(indexPointA);
     returnVector.push_back(indexPointB);
+    breakCount++;
 
 
     if (valMax == 0) // there are no points on segments at all
@@ -188,6 +190,7 @@ void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
             if (globalMask->at(u)) {
                 returnVector.push_back(u);
                 count++;
+                breakCount++;
             }
         }
         std::cout << "there were " << count << " points out of any segment" << std::endl;
@@ -224,6 +227,7 @@ void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
         case 1:
         {
             returnVector.push_back(indexPointA);
+            breakCount++;
             delete globalMask;
             //return;
             finished = true;
@@ -234,6 +238,8 @@ void calculate(std::vector<int> &returnVector, std::vector<bool> *globalMask) {
         {
             returnVector.push_back(indexPointA);
             returnVector.push_back(indexPointB);
+            breakCount++;
+            breakCount++;
             delete globalMask;
            // return;
             finished = true;
@@ -306,10 +312,13 @@ int main(int argc, char **argv) {
 
 
 
-    std::cout << "------------------END OF CALCULATION----------------" << std::endl;
+    
     std::cout << "Worked with " << points.size() << " points" << std::endl;
     std::cout << "Line consists of " << brokenLine.size() << " points" << std::endl;
+    std::cout << "Count of breaks: " << breakCount -1 << std::endl;
 
+
+    std::cout << "------------------END OF CALCULATION----------------" << std::endl;
 
     //
     //    for(unsigned int i = 0; i <brokenLine.size(); i++){
