@@ -29,11 +29,12 @@ test_dqueue: test_dqueue.cpp dqueue.h
 	$(CC) $(CFLAGS) -DDEBUG test_dqueue.cpp -o testdqueue
 	./testdqueue
 
-
 test_state: testState.cpp State.h State.cpp
 	$(CC) $(CFLAGS) -DDEBUG testState.cpp State.* -o testState
 	./testState
 
+test_permutation: permutate.cpp
+	$(CC) $(CFLAGS) permutate.cpp -o perm
 
 pack:
 	tar -czf `date "+%F"`snapshot.tar.gz *.cpp *.h *.dat Makefile

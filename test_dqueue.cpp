@@ -75,6 +75,16 @@ int main(int argc, char **argv) {
   for (it=v.begin(); it!=v.end(); ++it) {
     std::cout << *it << std::endl;
   }
+  std::cout << "removing test" << std::endl;
+  oq->remove(5);
+  v = oq->getData();
+  for (it=v.begin(); it!=v.end(); ++it) {
+    std::cout << *it << std::endl;
+  }
+  std::cout << "exp: " << 1 << " " << 6 << std::endl;
+
+  delete oq;
+  
   return(0);
 }
 
