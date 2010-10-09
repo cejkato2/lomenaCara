@@ -2,45 +2,40 @@
 #include <iostream>
 #include <fstream>
 #include "types.h"
-#include "dqueue.h"
+
 #include "search.h"
 #include <vector>
 
 #define MIN_AMOUNT_POINTS 3
 
-std::vector<Point *> points; // all readed points
+Point* points = NULL; // all readed points
+unsigned int pointsSize = 0; // size of points array
+std::vector<Point> solution; // the solution will be stored here
 
-int read_points(FILE *f, DQueue<Point *> *q) {
+int read_points(FILE *f) {
     int amount;
     fscanf(f, "%i", &amount);
     if (amount < MIN_AMOUNT_POINTS) {
         fclose(f);
-        std::cerr << "Amount of points has to be greater or equal " <<         \
-      MIN_AMOUNT_POINTS << std::endl;
+        std::cerr << "Amount of points has to be greater or equal " << MIN_AMOUNT_POINTS << std::endl;
         return MIN_AMOUNT_ERR;
     }
+    pointsSize = amount;
+    points = new Point[pointsSize];
+
     for (int i = 0; i < amount; ++i) {
-        if (feof(f) != 0) {
-            std::cerr << "Amount of inserted points is lesser than expected" <<        \
-        std::endl;
+        if (feof(f) != 0) { // I am fucked up
+            std::cerr << "Amount of inserted points is lesser than expected" << std::endl;
+           // delete [] points;
             return LESS_AMOUNT_ERR;
         }
-        Point *p = new Point();
-        fscanf(f, "%i %i", &p->x, &p->y);
-        q->addHead(p);
+        Point p;
+        fscanf(f, "%i %i", &p.x, &p.y);
+        points[i] = p;
     }
 
     fclose(f);
     return SUCCESS;
-}
-
-void print_result(FILE *f, DQueue<Point *> *q) {
-
-    DQueue<Point *>::Node *p = q->getHeadNode();
-    while (p != NULL) {
-        fprintf(f, "%i %i\n", p->data->x, p->data->y);
-        p = p->next;
-    }
 }
 
 /**
@@ -91,12 +86,12 @@ inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
     return false;
 }
 
-void print(std::vector<Point *> *v) {
-  std::vector<Point *>::iterator it;
-  for (it=v->begin(); it!=v->end(); ++it) {
-    std::cout << " " << *it;
-  }
-  std::cout << std::endl;
+void print(std::vector<Point> &v) {
+    std::vector<Point>::const_iterator it;
+    for (it = v.begin(); it != v.end(); ++it) {
+        std::cout << " " << *it << std::endl;
+    }
+    std::cout << std::endl;
 }
 
 /**
@@ -104,66 +99,30 @@ void print(std::vector<Point *> *v) {
  * @param l sequence of points defining [broken] line
  * @return count of breaks
  */
-int countBreaks(std::vector<Point *> *l) {
+int countBreaks(const std::vector<Point> &l) {
 
-    if(l->size() < 3)
+    if (l.size() < 3)
         return 0;
 
-  int amount = 0;
-  Point *a,*b,*c;
+    int amount = 0;
+    Point a,b,c;
 
-  for (std::vector<Point *>::iterator it=l->begin()+2; it!=l->end(); ++it) {
+    for (std::vector<Point>::const_iterator it = l.begin() + 2; it != l.end(); ++it) {
 
-      a=*(it-2); // first point
-      b=*it; // second point
-      c=*(it-1); // the middle one
+        a = *(it - 2); // first point
+        b = *it; // second point
+        c = *(it - 1); // the middle one
 
-   // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
-    if (!isOnSegment( a, b, c ))
-        amount++;
+        // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
+        if (!isOnSegment(&a, &b, &c))
+            amount++;
 
-  }
-  return amount;    
-}
-
-void remove_item(std::vector<Point *> *s, const Point *val) {
-  std::vector<Point *>::iterator it;
-  for (it=s->begin(); it!=s->end(); ++it) {
-    if (*it==val) {
-      s->erase(it);
-      break;
     }
-  }
+    return amount;
 }
 
-void permutate(std::vector<Point *> *s, std::vector<Point *> *f, std::vector<Point *> *br_line) {
-  std::vector<Point *>::iterator it;
-  if (s->empty()==false) {
-    for (it=s->begin(); it!=s->end(); ++it) {
-      std::vector<Point *> temp = *s;
-      f->push_back(*it);
-      remove_item(&temp, *it);
-      if (temp.empty()==true) {
-        if (br_line->empty() == true) {
-          //init state
-          *br_line = *f;
-        } else {
-          int old_size = countBreaks(br_line);
-          int new_size = countBreaks(f);
-          std::cout << old_size << " / " << new_size << " ";
-          if (new_size<old_size) {
-            *br_line = *f;
-          }
-        }
-        //DEBUG
-        print(f);
-      } else {
-        permutate(&temp, f, br_line);
-      }
-      remove_item(f, *it);
-    }
-  }
-}
+
+
 
 int main(int argc, char **argv) {
 
@@ -177,46 +136,31 @@ int main(int argc, char **argv) {
         }
     }
 
-    DQueue<Point *> *input, *backup;
-
-    /*init of input queue*/
-    input = new DQueue<Point *>();
 
     /*get points from stdin*/
-    return_val = read_points(input_file, input);
-    if (return_val == SUCCESS) {
-        std::cerr << input;
-        /* backup points */
-        backup = input->copy();
-        //
-    } else {
-        delete input;
+    return_val = read_points(input_file);
+    if (return_val != SUCCESS) {
+        delete [] points;
         return return_val;
     }
 
-
-
-    points = input->getData();
-    std::vector<Point *>::iterator it;
     std::ofstream output_stream;
     output_stream.open("vystup1.dat");
-    for (it = points.begin(); it != points.end(); ++it) {
-        output_stream << (*it)->x << " " << (*it)->y << std::endl;
+    for (unsigned int i = 0; i < pointsSize; i++) {
+        output_stream << points[i].x << " " << points[i].y << std::endl;
     }
     output_stream.close();
 
+    for(unsigned int i=0;i<pointsSize;i++){
+        solution.push_back(points[i]);
+    }
 
-    std::vector<Point *> temp_results;
-    std::vector<Point *> min_line;
-    
-    permutate(&points, &temp_results, &min_line);
-    std::cout << "min_line - size: " << countBreaks(&min_line) << std::endl;
-    print(&min_line);
-
+    std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
+    print(solution);
 
     output_stream.open("vystup2.dat");
-    for (it=min_line.begin(); it!=min_line.end(); ++it) {
-        output_stream << (*it)->x << " " << (*it)->y << std::endl;
+    for (std::vector<Point>::iterator it = solution.begin(); it != solution.end(); ++it) {
+        output_stream << it->x << " " << it->y << std::endl;
     }
     output_stream.close();
 
@@ -227,19 +171,8 @@ int main(int argc, char **argv) {
     /*cleaning*/
     /*--------*/
 
+    delete [] points;
 
-    delete input;
-
-    if (return_val == SUCCESS) {
-        //        delete result;
-        if (backup != NULL) {
-            while (!backup->isEmpty()) {
-                delete backup->getHead();
-                backup->popHead();
-            }
-            delete backup;
-        }
-    }
 
     return (return_val);
 }
