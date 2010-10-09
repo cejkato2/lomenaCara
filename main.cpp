@@ -296,6 +296,38 @@ int main(int argc, char **argv) {
     }
     output_stream.close();
 
+    std::vector<int> brokenLine;
+
+    std::vector<bool> *mask = new std::vector<bool>(points.size(), true);
+
+    std::cout << "------------------START OF CALCULATION----------------" << std::endl;
+
+    calculate(brokenLine, mask);
+
+
+
+    std::cout << "------------------END OF CALCULATION----------------" << std::endl;
+    std::cout << "Worked with " << points.size() << " points" << std::endl;
+    std::cout << "Line consists of " << brokenLine.size() << " points" << std::endl;
+
+
+    //
+    //    for(unsigned int i = 0; i <brokenLine.size(); i++){
+    //        std::cout << "hodnota :" << i <<" " << brokenLine[i] << std::endl;
+    //
+    //    }
+
+
+    output_stream.open("vystup2.dat");
+    for (unsigned int i = 0; i < brokenLine.size(); i++) {
+
+        std::cerr << i << ". point of broken line is " << points[brokenLine[i]] << std::endl;
+        output_stream << points[brokenLine[i]]->x << " " << points[brokenLine[i]]->y << std::endl;
+    }
+    output_stream.close();
+
+
+
 
 
     /*--------*/
