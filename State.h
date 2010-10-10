@@ -60,7 +60,7 @@ public:
    friend std::ostream& operator<< (std::ostream &out, const State &myState){
 
      for(unsigned int i=0;i<myState.getSize();i++){
-         out << myState.getIndex(i) << std::endl;
+         out << myState.getIndex(i) <<" ";
      }
 
      return out;

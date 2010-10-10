@@ -148,7 +148,7 @@ void permut(){
         if(onStackState->getSize()==pointsSize) // if I am on a floor, I cannot expand
         {
           // write out the state for now
-            std::cout << "One of lists of DFS tree:  " << std::endl;
+           // std::cout << "One of lists of DFS tree:  " << std::endl;
             std::cout << *onStackState << std::endl;
             delete onStackState;
             permu++; // just a counter for verification if I wrote all permutations
