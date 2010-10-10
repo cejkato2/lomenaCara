@@ -10,7 +10,7 @@ FAILED=${RED}FAILED${NORMAL}
 all: program test test_dqueue
 
 program: main.cpp
-	$(CC) $(CFLAGS) main.cpp
+	$(CC) $(CFLAGS) main.cpp State.* -o a.out
 
 clean:
 	rm a.out testdqueue testdata/*.png

@@ -2,7 +2,7 @@
 #include <iostream>
 #include <fstream>
 #include "types.h"
-
+#include "State.h"
 #include "search.h"
 #include <vector>
 
@@ -11,6 +11,7 @@
 Point* points = NULL; // all readed points
 unsigned int pointsSize = 0; // size of points array
 std::vector<Point> solution; // the solution will be stored here
+int permu=0;
 
 int read_points(FILE *f) {
     int amount;
@@ -26,7 +27,7 @@ int read_points(FILE *f) {
     for (int i = 0; i < amount; ++i) {
         if (feof(f) != 0) { // I am fucked up
             std::cerr << "Amount of inserted points is lesser than expected" << std::endl;
-           // delete [] points;
+            delete [] points;
             return LESS_AMOUNT_ERR;
         }
         Point p;
@@ -121,7 +122,71 @@ int countBreaks(const std::vector<Point> &l) {
     return amount;
 }
 
+void permut(){
 
+    std::vector<State *> stack;
+    std::vector<bool> mask(pointsSize,true);
+
+    // initialize stack
+
+    for(unsigned int i=0;i<pointsSize;i++){
+        State *state = new State(1);
+        state->setIndex(i,0);
+        stack.push_back(state);
+    }
+
+    
+    int lastPosition;
+
+    while(!stack.empty()){
+
+        State *onStackState=stack.back();
+        stack.pop_back();
+
+        
+
+        if(onStackState->getSize()==pointsSize) // if I am on a floor, I cannot expand
+        {
+          // write out the state for now
+            std::cout << "One of lists of DFS tree:  " << std::endl;
+            std::cout << *onStackState << std::endl;
+            delete onStackState;
+            permu++; // just a counter for verification if I wrote all permutations
+            continue;
+
+        }
+
+        lastPosition=0;
+        
+        // set all mask variables to true
+        for(unsigned int i=0;i<pointsSize;i++){
+            mask[i]=true;
+        }
+
+        
+        // set mask variables depend on used indexes
+        for(unsigned int i=0;i<onStackState->getSize();i++){
+            mask[onStackState->getIndex(i)]=false;
+        }
+
+        // here I expand my state to stack
+        for(unsigned int i=0;i<pointsSize-onStackState->getSize();i++){
+            State *expandedState = new State(*onStackState); // here I make a deep copy
+
+            while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
+                lastPosition++;
+
+            expandedState->setIndex(lastPosition,expandedState->getSize()-1); // add a new part of state to last position
+            lastPosition++;
+            stack.push_back(expandedState);
+        }
+        delete onStackState;
+        
+
+    }
+
+
+}
 
 
 int main(int argc, char **argv) {
@@ -140,7 +205,6 @@ int main(int argc, char **argv) {
     /*get points from stdin*/
     return_val = read_points(input_file);
     if (return_val != SUCCESS) {
-        delete [] points;
         return return_val;
     }
 
@@ -155,8 +219,11 @@ int main(int argc, char **argv) {
         solution.push_back(points[i]);
     }
 
-    std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
-    print(solution);
+    //std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
+    print(solution); // not yet solution
+
+    std::cout << "All permutations:" << std::endl;
+    permut();
 
     output_stream.open("vystup2.dat");
     for (std::vector<Point>::iterator it = solution.begin(); it != solution.end(); ++it) {
@@ -165,7 +232,7 @@ int main(int argc, char **argv) {
     output_stream.close();
 
 
-
+    std::cout << "count of all permutation :" << permu << std::endl;
 
     /*--------*/
     /*cleaning*/

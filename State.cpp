@@ -6,46 +6,58 @@
  */
 
 #include <stddef.h>
-#include <vector>
 
 #include "State.h"
 
-State::State(int indexArraySizeArgument) {
+State::State(unsigned int indexArraySizeArgument) {
 
     indexArraySize=indexArraySizeArgument;
-    indexArray = new int[indexArraySize];
-    bitMaskArray = std::vector<bool>(indexArraySize, true);
+    indexArray = new unsigned int[indexArraySize];
+}
+
+State::State(const State& original){
+
+    indexArraySize=original.indexArraySize+1;
+    indexArray = new unsigned int[indexArraySize];
+
+    for(unsigned int i=0; i<indexArraySize-1;i++){ // -1 because new array is bigger
+        indexArray[i]=original.indexArray[i];
+    }
+
+    price=original.price;
 }
 
 
 State::~State() {
 
-    bitMaskArray.clear();
     delete [] indexArray;
     indexArray = NULL;
 }
 
-int State::setIndex(int value, int position){
+int State::setIndex(unsigned int value, unsigned int position){
 
-    if(position < 0 || position >= indexArraySize || value < 0 || value >= indexArraySize)
+    if(position >= indexArraySize)
         return -1;
 
     indexArray[position] = value;
-    bitMaskArray[position] = false;
-
     return 0;
 
 
 }
 
-int State::getIndex(int position){
-    if(position < 0 || position >= indexArraySize)
+int State::getIndex(unsigned int position) const{
+    if(position >= indexArraySize)
         return -1;
-
-    if(bitMaskArray[position]) // not set yet
-        return -2;
 
     return indexArray[position];
 
 }
 
+unsigned int State::getSize() const{
+    return indexArraySize;
+}
+
+
+int State::getPrice(){
+    return price;
+}
