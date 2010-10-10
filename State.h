@@ -55,12 +55,17 @@ public:
      * @return return total price(count of breaks)
      */
 
+    /**
+     * @return vector of indexes, using getIndex()
+     */
+    std::vector<int> getIndexes();
+
     std::vector<bool> getIndexUsedVector();
    virtual int getPrice();
    friend std::ostream& operator<< (std::ostream &out, const State &myState){
 
      for(unsigned int i=0;i<myState.getSize();i++){
-         out << myState.getIndex(i) <<" ";
+         out << myState.getIndex(i) << " ";
      }
 
      return out;

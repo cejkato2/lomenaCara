@@ -1,5 +1,5 @@
 #!/bin/bash
-
+set -x
 rm -f testdate/*.png
 
 for i in testdata/test*; do 

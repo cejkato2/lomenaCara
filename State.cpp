@@ -53,6 +53,14 @@ int State::getIndex(unsigned int position) const{
 
 }
 
+std::vector<int> State::getIndexes() {
+  std::vector<int> set;
+  for (unsigned int i=0; i<indexArraySize; ++i) {
+    set.push_back(indexArray[i]);
+  }
+  return set;
+}
+
 unsigned int State::getSize() const{
     return indexArraySize;
 }

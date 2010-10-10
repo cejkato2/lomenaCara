@@ -11,6 +11,7 @@
 Point* points = NULL; // all readed points
 unsigned int pointsSize = 0; // size of points array
 std::vector<Point> solution; // the solution will be stored here
+unsigned int min_breaks = (unsigned int) -1;
 int permu=0;
 
 int read_points(FILE *f) {
@@ -64,7 +65,7 @@ inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
  * @param a first point
  * @param b second point
  * @param c middle point
- * @return
+ * @return true if c is on the same line with a,b and c is between a,b
  */
 inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
 
@@ -83,14 +84,13 @@ inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
     if ((b->y < c->y) && (c->y < a->y))
         return true;
 
-
     return false;
 }
 
 void print(std::vector<Point> &v) {
     std::vector<Point>::const_iterator it;
     for (it = v.begin(); it != v.end(); ++it) {
-        std::cout << " " << *it << std::endl;
+        std::cout << " " << *it;
     }
     std::cout << std::endl;
 }
@@ -124,7 +124,7 @@ int countBreaks(const std::vector<Point> &l) {
 
 /**
  * counts a count of breaks on the line defined by sequence of points defined by indexes in State structure
- * @param l sequence of points defining [broken] line
+ * @param state FIXME
  * @return count of breaks
  */
 int countBreaks(const State *state) {
@@ -177,7 +177,23 @@ void permut(){
         {
           // write out the state for now
            // std::cout << "One of lists of DFS tree:  " << std::endl;
-            std::cout << *parentState << " breaks: " << countBreaks(parentState) << std::endl;
+            unsigned int count = countBreaks(parentState);
+
+            if (count < min_breaks) {
+              std::cout << "prev min_breaks " << min_breaks;
+              min_breaks = count;
+              std::cout << " new: " << min_breaks << std::endl;
+              solution.clear();
+
+              std::vector<int> indexes = parentState->getIndexes();
+              
+              std::vector<int>::iterator it;
+              for (it=indexes.begin(); it!=indexes.end(); ++it) {
+                solution.push_back( points[*it] );
+              }
+              print(solution);
+            }
+            //std::cout << *parentState << " breaks: " << count << std::endl;
             delete parentState;
             permu++; // just a counter for verification if I wrote all permutations
             continue;
@@ -243,12 +259,11 @@ int main(int argc, char **argv) {
     }
     output_stream.close();
 
-    for(unsigned int i=0;i<pointsSize;i++){
-        solution.push_back(points[i]);
-    }
-
-    //std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
-    print(solution); // not yet solution
+//    for(unsigned int i=0;i<pointsSize;i++){
+//        solution.push_back(points[i]);
+//    }
+//
+//    //std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
 
     std::cout << "All permutations:" << std::endl;
     permut();
@@ -258,6 +273,7 @@ int main(int argc, char **argv) {
         output_stream << it->x << " " << it->y << std::endl;
     }
     output_stream.close();
+    print(solution); // not yet solution
 
 
     std::cout << "count of all permutation :" << permu << std::endl;

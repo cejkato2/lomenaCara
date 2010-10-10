@@ -9,6 +9,6 @@ fi
 
 echo "$AMOUNT" > "testdata/$FILENAME"
 for ((i=0; i<$AMOUNT; i++)); do
-  echo "$((RANDOM/100)) $((RANDOM/100))" >> "testdata/$FILENAME"
+  echo "$((RANDOM%100)) $((RANDOM%100))" >> "testdata/$FILENAME"
 done
 

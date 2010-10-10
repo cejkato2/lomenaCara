@@ -46,5 +46,6 @@ plot:
 	fi;
 
 gendoc:
+	@mkdir -p doc
 	doxygen doxygen.cfg
 
