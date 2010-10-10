@@ -122,6 +122,34 @@ int countBreaks(const std::vector<Point> &l) {
     return amount;
 }
 
+/**
+ * counts a count of breaks on the line defined by sequence of points defined by vector l
+ * @param l sequence of points defining [broken] line
+ * @return count of breaks
+ */
+int countBreaks(const State *state) {
+
+    if (state->getSize() < 3)
+        return 0;
+
+    int amount = 0;
+    Point a,b,c;
+
+    for (unsigned int i=2;i<state->getSize();i++) {
+
+        a = points[state->getIndex(i-2)]; // first point
+        b = points[state->getIndex(i)]; // second point
+        c = points[state->getIndex(i-1)]; // the middle one
+
+        // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
+        if (!isOnSegment(&a, &b, &c))
+            amount++;
+
+    }
+    return amount;
+}
+
+
 void permut(){
 
     std::vector<State *> stack;
@@ -149,7 +177,7 @@ void permut(){
         {
           // write out the state for now
            // std::cout << "One of lists of DFS tree:  " << std::endl;
-            std::cout << *onStackState << std::endl;
+            std::cout << *onStackState << " breaks: " << countBreaks(onStackState) << std::endl;
             delete onStackState;
             permu++; // just a counter for verification if I wrote all permutations
             continue;

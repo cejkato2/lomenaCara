@@ -7,7 +7,7 @@ OK=${GREEN}OK${NORMAL}
 FAILED=${RED}FAILED${NORMAL}
 
 
-all: program test test_dqueue
+all: program test_dqueue
 
 program: main.cpp
 	$(CC) $(CFLAGS) main.cpp State.* -o a.out
