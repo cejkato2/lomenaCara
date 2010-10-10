@@ -123,7 +123,7 @@ int countBreaks(const std::vector<Point> &l) {
 }
 
 /**
- * counts a count of breaks on the line defined by sequence of points defined by vector l
+ * counts a count of breaks on the line defined by sequence of points defined by indexes in State structure
  * @param l sequence of points defining [broken] line
  * @return count of breaks
  */
@@ -142,7 +142,7 @@ int countBreaks(const State *state) {
         c = points[state->getIndex(i-1)]; // the middle one
 
         // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
-        if (!isOnSegment(&a, &b, &c))
+        if (!isOnSegment(&a, &b, &c)) // is the middle one on a line? if not then it is a break
             amount++;
 
     }
@@ -152,10 +152,10 @@ int countBreaks(const State *state) {
 
 void permut(){
 
-    std::vector<State *> stack;
-    std::vector<bool> mask(pointsSize,true);
+    std::vector<State *> stack; // implicit stack
+    std::vector<bool> mask(pointsSize,true); 
 
-    // initialize stack
+    // initialize stack, put first level of values
 
     for(unsigned int i=0;i<pointsSize;i++){
         State *state = new State(1);
@@ -164,21 +164,21 @@ void permut(){
     }
 
     
-    int lastPosition;
+    int lastPosition; //
 
     while(!stack.empty()){
 
-        State *onStackState=stack.back();
+        State *parentState=stack.back();
         stack.pop_back();
 
         
 
-        if(onStackState->getSize()==pointsSize) // if I am on a floor, I cannot expand
+        if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
         {
           // write out the state for now
            // std::cout << "One of lists of DFS tree:  " << std::endl;
-            std::cout << *onStackState << " breaks: " << countBreaks(onStackState) << std::endl;
-            delete onStackState;
+            std::cout << *parentState << " breaks: " << countBreaks(parentState) << std::endl;
+            delete parentState;
             permu++; // just a counter for verification if I wrote all permutations
             continue;
 
@@ -193,22 +193,22 @@ void permut(){
 
         
         // set mask variables depend on used indexes
-        for(unsigned int i=0;i<onStackState->getSize();i++){
-            mask[onStackState->getIndex(i)]=false;
+        for(unsigned int i=0;i<parentState->getSize();i++){
+            mask[parentState->getIndex(i)]=false;
         }
 
         // here I expand my state to stack
-        for(unsigned int i=0;i<pointsSize-onStackState->getSize();i++){
-            State *expandedState = new State(*onStackState); // here I make a deep copy
+        for(unsigned int i=0;i<pointsSize-parentState->getSize();i++){
+            State *childState = new State(*parentState); // here I make a deep copy
 
             while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
                 lastPosition++;
 
-            expandedState->setIndex(lastPosition,expandedState->getSize()-1); // add a new part of state to last position
+            childState->setIndex(lastPosition,childState->getSize()-1); // add a new part of state to last position
             lastPosition++;
-            stack.push_back(expandedState);
+            stack.push_back(childState);
         }
-        delete onStackState;
+        delete parentState; // now I can delete parent state
         
 
     }
