@@ -1,3 +1,4 @@
+#include <mpi.h>
 #include <stdio.h>
 #include <iostream>
 #include <fstream>
@@ -6,13 +7,91 @@
 #include "search.h"
 #include <vector>
 
+/*!
+ * minimal number of Points, which we can count with
+ */
 #define MIN_AMOUNT_POINTS 3
 
+/*!
+ * amount of requests for work before sending a request for token to CPU_MASTER
+ */
+#define TRY_GET_WORK 2
+
+/*!
+ * number of cpu, that distributes data and sends tokens/receives requests for tokens
+ */
+#define CPU_MASTER 0
+
+enum mpiflags {
+/*!
+ * distribution of data - broadcast
+ */
+FLAG_DIST_DATA, 
+/*!
+ * send request for token to CPU_MASTER
+ */
+FLAG_ASK_TOKEN,
+/*!
+ * try to get work from cpu 'cpu_counter'
+ */
+FLAG_ASK_WORK,
+/*!
+ * send part of job - answer to work request
+ */
+FLAG_SEND_WORK,
+/*!
+ * cpu has no work - answer to work request
+ */
+FLAG_IDLE,
+/*!
+ * CPU_MASTER sends white token
+ */
+FLAG_WHITE_TOKEN,
+/*!
+ * cpu that works and accepts token sends black token to next cpu
+ */
+FLAG_BLACK_TOKEN
+};
+
+/*!
+ * Array of read Points.
+ * This array is resent from CPU_MASTER to every other cpu
+ */
 Point* points = NULL; // all readed points
+
+/*!
+ * Amount of Points in array points
+ */
 unsigned int pointsSize = 0; // size of points array
+
+/*!
+ * final solution
+ */
 std::vector<Point> solution; // the solution will be stored here
+
+/*!
+ * Amount of breaks of the line
+ * at first it is set to the biggest available value (all '1's in binary code)
+ */
 unsigned int min_breaks = (unsigned int) -1;
+
 int permu=0;
+
+/*!
+ * total amount of cpus in cluster
+ */
+int cpu_amount;
+
+/*!
+ * id of this cpu
+ */
+int cpu_id;
+
+/*!
+ * counter - for deciding where to send MPI message
+ */
+int cpu_counter;
+
 
 int read_points(FILE *f) {
     int amount;
@@ -237,44 +316,78 @@ int main(int argc, char **argv) {
 
     int return_val = SUCCESS;
 
-    FILE *input_file = stdin;
-    if (argc > 1) {
+    MPI_Init(&argc, &argv);
+
+    MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id);
+    MPI_Comm_size(MPI_COMM_WORLD, &cpu_amount);
+
+    cpu_counter = cpu_id; //at first set counter to myself (than circular pointing)
+
+    std::cout << "cpu#: " << cpu_id << " of " << cpu_amount << std::endl;
+
+    if (cpu_id == CPU_MASTER) {
+      FILE *input_file = stdin;
+      if (argc > 1) {
         input_file = fopen(argv[1], "r");
         if (input_file == NULL) {
-            input_file = stdin;
+          input_file = stdin;
         }
-    }
+      }
 
+      /*get points from stdin*/
+      return_val = read_points(input_file);
+      void *pointer = (void *) &pointsSize;
+      std::cout << "cpu#" << cpu_id << " bcast " << pointsSize << std::endl;
+      MPI_Bcast(pointer, sizeof(pointsSize), MPI_UNSIGNED, FLAG_DIST_DATA, MPI_COMM_WORLD);
+      pointer = (void *) points;
+      MPI_Bcast(pointer, pointsSize*sizeof(Point), MPI_BYTE, FLAG_DIST_DATA, MPI_COMM_WORLD);
 
-    /*get points from stdin*/
-    return_val = read_points(input_file);
-    if (return_val != SUCCESS) {
+      std::cout << "cpu#" << cpu_id << " ";
+      for (unsigned int i=0; i<pointsSize; ++i) {
+        std::cout << points[i] << " ";
+      }
+      std::cout << std::endl;
+
+      if (return_val != SUCCESS) {
         return return_val;
+      }
+    } else {
+      
+      void *pointer = (void *) &pointsSize;
+      MPI_Bcast(pointer, sizeof(pointsSize), MPI_UNSIGNED, FLAG_DIST_DATA, MPI_COMM_WORLD);
+      std::cout << "cpu#" << cpu_id << " pointSize: " << pointsSize << std::endl;
+      points = new Point[pointsSize];
+      pointer = points;
+      MPI_Bcast(pointer, pointsSize*sizeof(Point), MPI_BYTE, FLAG_DIST_DATA, MPI_COMM_WORLD);
+      std::cout << "cpu#" << cpu_id << " ";
+      for (unsigned int i=0; i<pointsSize; ++i) {
+        std::cout << points[i] << " ";
+      }
+      std::cout << std::endl;
+
     }
 
     std::ofstream output_stream;
-    output_stream.open("vystup1.dat");
-    for (unsigned int i = 0; i < pointsSize; i++) {
+    if (cpu_id == CPU_MASTER) {
+      output_stream.open("vystup1.dat");
+      for (unsigned int i = 0; i < pointsSize; i++) {
         output_stream << points[i].x << " " << points[i].y << std::endl;
+      }
+      output_stream.close();
+
     }
-    output_stream.close();
 
-//    for(unsigned int i=0;i<pointsSize;i++){
-//        solution.push_back(points[i]);
-//    }
-//
-//    //std::cout << "Count of breaks on a line : "  << countBreaks(solution) << std::endl;
-
-    std::cout << "All permutations:" << std::endl;
     permut();
 
-    output_stream.open("vystup2.dat");
-    for (std::vector<Point>::iterator it = solution.begin(); it != solution.end(); ++it) {
+    //std::cout << "All permutations:" << std::endl;
+    if (cpu_id == CPU_MASTER) {
+      output_stream.open("vystup2.dat");
+      for (std::vector<Point>::iterator it = solution.begin(); it != solution.end(); ++it) {
         output_stream << it->x << " " << it->y << std::endl;
+      }
+      output_stream.close();
+      print(solution); // not yet solution
     }
-    output_stream.close();
-    print(solution); // not yet solution
-
 
     std::cout << "count of all permutation :" << permu << std::endl;
 
@@ -283,6 +396,13 @@ int main(int argc, char **argv) {
     /*--------*/
 
     delete [] points;
+
+    
+    /*!
+     * wait for all cpus to end their job
+     */
+    MPI_Barrier(MPI_COMM_WORLD);
+    MPI_Finalize();
 
 
     return (return_val);

@@ -1,4 +1,5 @@
 CC=g++
+PARCC=mpiCC
 CFLAGS=-Wall -g
 RED="\033[0;31m"
 GREEN="\033[0;32m"
@@ -11,6 +12,9 @@ all: program test_dqueue gendoc
 
 program: main.cpp
 	$(CC) $(CFLAGS) main.cpp State.* -o a.out
+
+par_program: main.cpp
+	$(PARCC) $(CFLAGS) main.cpp State.* -o a.out
 
 clean:
 	rm -f a.out testdqueue perm testdata/png/*.png
