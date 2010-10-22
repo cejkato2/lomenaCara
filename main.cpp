@@ -119,53 +119,6 @@ int read_points(FILE *f) {
     return SUCCESS;
 }
 
-/**
- * are three different points a,b,c on a line ?
- * @param a first point
- * @param b second point
- * @param c third point
- * @return true if they are on a line, else false
- */
-
-inline bool isElementLine(const Point *a, const Point *b, const Point *c) {
-
-    if (*a == *c || *b == *c)
-        return false;
-
-    int det = (a->x * b->y + a->y * c->x + b->x * c->y) - (b->y * c->x + c->y * a->x + a->y * b->x);
-
-    if (det == 0)
-        return true;
-    else return false;
-}
-
-/**
- * is the point c on the segment between points a and b ?
- * @param a first point
- * @param b second point
- * @param c middle point
- * @return true if c is on the same line with a,b and c is between a,b
- */
-inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
-
-    if (!isElementLine(a, b, c)) // if it is not on the line, then it cannot be on the segment
-        return false;
-
-    if ((a->x < c->x) && (c->x < b->x))
-        return true;
-
-    if ((b->x < c->x) && (c->x < a->x))
-        return true;
-
-    if ((a->y < c->y) && (c->y < b->y))
-        return true;
-
-    if ((b->y < c->y) && (c->y < a->y))
-        return true;
-
-    return false;
-}
-
 void print(std::vector<Point> &v) {
     std::vector<Point>::const_iterator it;
     for (it = v.begin(); it != v.end(); ++it) {
@@ -174,62 +127,10 @@ void print(std::vector<Point> &v) {
     std::cout << std::endl;
 }
 
-/**
- * counts a count of breaks on the line defined by sequence of points defined by vector l
- * @param l sequence of points defining [broken] line
- * @return count of breaks
- */
-int countBreaks(const std::vector<Point> &l) {
-
-    if (l.size() < 3)
-        return 0;
-
-    int amount = 0;
-    Point a,b,c;
-
-    for (std::vector<Point>::const_iterator it = l.begin() + 2; it != l.end(); ++it) {
-
-        a = *(it - 2); // first point
-        b = *it; // second point
-        c = *(it - 1); // the middle one
-
-        // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
-        if (!isOnSegment(&a, &b, &c))
-            amount++;
-
-    }
-    return amount;
-}
-
-/**
- * counts a count of breaks on the line defined by sequence of points defined by indexes in State structure
- * @param state FIXME
- * @return count of breaks
- */
-int countBreaks(const State *state) {
-
-    if (state->getSize() < 3)
-        return 0;
-
-    int amount = 0;
-    Point a,b,c;
-
-    for (unsigned int i=2;i<state->getSize();i++) {
-
-        a = points[state->getIndex(i-2)]; // first point
-        b = points[state->getIndex(i)]; // second point
-        c = points[state->getIndex(i-1)]; // the middle one
-
-        // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
-        if (!isOnSegment(&a, &b, &c)) // is the middle one on a line? if not then it is a break
-            amount++;
-
-    }
-    return amount;
-}
 
 
-void permut(){
+
+void permut(const Point *pointArray){
 
     std::vector<State *> stack; // implicit stack
     std::vector<bool> mask(pointsSize,true); 
@@ -237,8 +138,8 @@ void permut(){
     // initialize stack, put first level of values
 
     for(unsigned int i=0;i<pointsSize;i++){
-        State *state = new State(1);
-        state->setIndex(i,0);
+        State *state = new State(1, pointArray);
+        state->setLastIndex(i);
         stack.push_back(state);
     }
 
@@ -253,10 +154,8 @@ void permut(){
         
 
         if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
-        {
-          // write out the state for now
-           // std::cout << "One of lists of DFS tree:  " << std::endl;
-            unsigned int count = countBreaks(parentState);
+        { 
+            unsigned int count = parentState->getPrice();
 
             if (count < min_breaks) {
               std::cout << "prev min_breaks " << min_breaks;
@@ -272,9 +171,8 @@ void permut(){
               }
               print(solution);
             }
-            //std::cout << *parentState << " breaks: " << count << std::endl;
+            
             delete parentState;
-            permu++; // just a counter for verification if I wrote all permutations
             continue;
 
         }
@@ -294,12 +192,18 @@ void permut(){
 
         // here I expand my state to stack
         for(unsigned int i=0;i<pointsSize-parentState->getSize();i++){
-            State *childState = new State(*parentState); // here I make a deep copy
-
+            
             while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
                 lastPosition++;
 
-            childState->setIndex(lastPosition,childState->getSize()-1); // add a new part of state to last position
+            if(parentState->getExpandPrice(lastPosition) >= min_breaks) // if I cannot get better solution = bounding
+            {
+                lastPosition++;
+                continue;
+            }
+
+            State *childState = new State(*parentState); // here I make a deep copy
+            childState->setLastIndex(lastPosition); // add a new part of state
             lastPosition++;
             stack.push_back(childState);
         }
@@ -374,10 +278,9 @@ int main(int argc, char **argv) {
         output_stream << points[i].x << " " << points[i].y << std::endl;
       }
       output_stream.close();
-
     }
 
-    permut();
+    permut(points);
 
     //std::cout << "All permutations:" << std::endl;
     if (cpu_id == CPU_MASTER) {
@@ -389,7 +292,6 @@ int main(int argc, char **argv) {
       print(solution); // not yet solution
     }
 
-    std::cout << "count of all permutation :" << permu << std::endl;
 
     /*--------*/
     /*cleaning*/

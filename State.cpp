@@ -9,14 +9,17 @@
 
 #include "State.h"
 
-State::State(unsigned int indexArraySizeArgument) {
+State::State(unsigned int indexArraySizeArgument, const Point *pointArrayArgument) {
 
+    pointArray=pointArrayArgument; // swallow copy
     indexArraySize=indexArraySizeArgument;
     indexArray = new unsigned int[indexArraySize];
+    price=0;
 }
 
 State::State(const State& original){
-
+    
+    pointArray=original.pointArray; // swallow copy
     indexArraySize=original.indexArraySize+1;
     indexArray = new unsigned int[indexArraySize];
 
@@ -34,12 +37,18 @@ State::~State() {
     indexArray = NULL;
 }
 
-int State::setIndex(unsigned int value, unsigned int position){
+int State::setLastIndex(unsigned int value){
 
-    if(position >= indexArraySize)
-        return -1;
+    indexArray[indexArraySize-1] = value; // setting up last value
 
-    indexArray[position] = value;
+    if(indexArraySize < 3) // only 2, then doing nothing
+        return 0;
+
+    // counting breaks
+                     // pre-pre last point             last point                       pre-last point
+    if(!isOnSegment( &pointArray[indexArray[indexArraySize-3]]  , &pointArray[indexArray[indexArraySize-1]], &pointArray[indexArray[indexArraySize-2]] ))
+        price++;
+
     return 0;
 
 
@@ -66,6 +75,23 @@ unsigned int State::getSize() const{
 }
 
 
-int State::getPrice(){
+unsigned int State::getPrice(){
     return price;
 }
+
+unsigned int State::getExpandPrice(int index){
+
+ if(indexArraySize < 2) // i know only 2, then there is no break
+        return 0;
+
+    // counting breaks
+                     // pre-pre last point                          last point                                   pre-last point
+    if(!isOnSegment( &pointArray[indexArray[indexArraySize-2]]  , &pointArray[index], &pointArray[indexArray[indexArraySize-1]] ))
+        return price+1; // if I add this point then price will be higher
+
+    return price;
+
+}
+
+
+
