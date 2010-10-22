@@ -22,6 +22,21 @@
  */
 #define CPU_MASTER 0
 
+enum cpustatus {
+/*!
+ * cpu has no work
+ */
+STATUS_IDLE,
+/*!
+ * cpu is working
+ */
+STATUS_WORKING,
+/*!
+ * the end of work
+ */
+STATUS_FINISHING
+};
+
 enum mpiflags {
 /*!
  * distribution of data - broadcast
@@ -50,7 +65,11 @@ FLAG_WHITE_TOKEN,
 /*!
  * cpu that works and accepts token sends black token to next cpu
  */
-FLAG_BLACK_TOKEN
+FLAG_BLACK_TOKEN,
+/*!
+ * tell cpus to end themselves
+ */
+FLAG_FINISHING
 };
 
 /*!
@@ -131,87 +150,115 @@ void print(std::vector<Point> &v) {
 
 
 void permut(const Point *pointArray){
+    /*!
+     * attempts of requests for job
+     */
+    int job_requests = 0;
+    int cpu_state = STATUS_IDLE;
 
     std::vector<State *> stack; // implicit stack
     std::vector<bool> mask(pointsSize,true); 
 
-    // initialize stack, put first level of values
-
-    for(unsigned int i=0;i<pointsSize;i++){
+    if (cpu_id == CPU_MASTER) {
+      // initialize stack, put first level of values
+      for(unsigned int i=0;i<pointsSize;i++){
         State *state = new State(1, pointArray);
         state->setLastIndex(i);
         stack.push_back(state);
+      }
     }
 
     
-    int lastPosition; //
+    int lastPosition;
 
-    while(!stack.empty()){
 
-        State *parentState=stack.back();
-        stack.pop_back();
 
-        
+    do {
+      if (stack.empty()) {
+        std::cerr << "cpu#" << cpu_id << " IDLE" << std::endl;
+        cpu_state = STATUS_IDLE;
 
-        if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
-        { 
-            unsigned int count = parentState->getPrice();
 
-            if (count < min_breaks) {
-              std::cout << "prev min_breaks " << min_breaks;
-              min_breaks = count;
-              std::cout << " new: " << min_breaks << std::endl;
-              solution.clear();
+        //TODO request for work
+        //TODO receive answer
+        //
+        ////TODO if request amount reaches TRY_GET_WORK, request for token
+        ////receive token - if it is white, wait for FLAG_FINISHING otherwise
+        ////request for job from black cpu
+        //
 
-              std::vector<int> indexes = parentState->getIndexes();
-              
-              std::vector<int>::iterator it;
-              for (it=indexes.begin(); it!=indexes.end(); ++it) {
-                solution.push_back( points[*it] );
+        //developing end
+        cpu_state = STATUS_FINISHING;
+      }
+      
+      while(!stack.empty()){
+
+          State *parentState=stack.back();
+          stack.pop_back();
+
+          
+
+          if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
+          { 
+              unsigned int count = parentState->getPrice();
+
+              if (count < min_breaks) {
+                std::cout << "prev min_breaks " << min_breaks;
+                min_breaks = count;
+                std::cout << " new: " << min_breaks << std::endl;
+                solution.clear();
+
+                std::vector<int> indexes = parentState->getIndexes();
+                
+                std::vector<int>::iterator it;
+                for (it=indexes.begin(); it!=indexes.end(); ++it) {
+                  solution.push_back( points[*it] );
+                }
+                print(solution);
               }
-              print(solution);
-            }
-            
-            delete parentState;
-            continue;
+              
+              delete parentState;
+              continue;
 
-        }
+          }
 
-        lastPosition=0;
-        
-        // set all mask variables to true
-        for(unsigned int i=0;i<pointsSize;i++){
-            mask[i]=true;
-        }
+          lastPosition=0;
+          
+          // set all mask variables to true
+          for(unsigned int i=0;i<pointsSize;i++){
+              mask[i]=true;
+          }
 
-        
-        // set mask variables depend on used indexes
-        for(unsigned int i=0;i<parentState->getSize();i++){
-            mask[parentState->getIndex(i)]=false;
-        }
+          
+          // set mask variables depend on used indexes
+          for(unsigned int i=0;i<parentState->getSize();i++){
+              mask[parentState->getIndex(i)]=false;
+          }
 
-        // here I expand my state to stack
-        for(unsigned int i=0;i<pointsSize-parentState->getSize();i++){
-            
-            while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
-                lastPosition++;
+          // here I expand my state to stack
+          for(unsigned int i=0;i<pointsSize-parentState->getSize();i++){
+              
+              while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
+                  lastPosition++;
 
-            if(parentState->getExpandPrice(lastPosition) >= min_breaks) // if I cannot get better solution = bounding
-            {
-                lastPosition++;
-                continue;
-            }
+              if(parentState->getExpandPrice(lastPosition) >= min_breaks) // if I cannot get better solution = bounding
+              {
+                  lastPosition++;
+                  continue;
+              }
 
-            State *childState = new State(*parentState); // here I make a deep copy
-            childState->setLastIndex(lastPosition); // add a new part of state
-            lastPosition++;
-            stack.push_back(childState);
-        }
-        delete parentState; // now I can delete parent state
-        
+              State *childState = new State(*parentState); // here I make a deep copy
+              childState->setLastIndex(lastPosition); // add a new part of state
+              lastPosition++;
+              stack.push_back(childState);
+          }
+          delete parentState; // now I can delete parent state
+          
 
-    }
+      }
+    } while(cpu_state != STATUS_FINISHING);
 
+    //TODO: bcast solution
 
 }
 
