@@ -22,6 +22,11 @@
  */
 #define CPU_MASTER 0
 
+/*!
+ * number of cpu, which follows current cpu
+ */
+#define CPU_NEXT_NEIGH ((cpu_id+1)%cpu_amount)
+
 enum cpustatus {
 /*!
  * cpu has no work
@@ -111,6 +116,8 @@ int cpu_id;
  */
 int cpu_counter;
 
+#define MESSAGE_BUF_SIZE 1025
+char message_buf[MESSAGE_BUF_SIZE];
 
 int read_points(FILE *f) {
     int amount;
@@ -146,7 +153,80 @@ void print(std::vector<Point> &v) {
     std::cout << std::endl;
 }
 
+/*!
+ * Decide whether to resend white or black token
+ */
+void handle_white_token(std::vector<State *> *s)
+{
+    if (s->size() > 0) {
+      MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+          FLAG_BLACK_TOKEN, MPI_COMM_WORLD);
+      std::cerr << "cpu#" << cpu_id << " received WT resend BT" << std::endl;
+    } else {
+      //no work, resend white token
+      MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+          FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
+      std::cerr << "cpu#" << cpu_id << " received WT resend WT" << std::endl;
+    }
+}
 
+/*!
+ * receive MPI message if any and handle it
+ * it should include sending another job
+ * @param s - pointer to stack for dividing
+ */
+void handle_messages(std::vector<State *> *s)
+{
+  /*!
+   * variable for storing status of message
+   */
+  MPI_Status status;
+  int isMessage = 0;
+
+  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
+  std::cerr << "cpu#" << cpu_id << " MPI_Iprobe " << isMessage << std::endl;
+  if (isMessage != 0) {
+  //receive message
+    MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, status.MPI_TAG,
+      MPI_COMM_WORLD, &status);
+    std::cerr << "cpu#" << cpu_id << " MPI_Recv tag: " << status.MPI_TAG;
+    std::cerr << " source: " << status.MPI_SOURCE << std::endl;
+
+    switch (status.MPI_TAG) {
+      case FLAG_ASK_WORK:
+        if (s->size() > (unsigned int) 2) {
+          //TODO send part of stack
+          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, FLAG_SEND_WORK,
+              MPI_COMM_WORLD);
+          std::cerr << "cpu#" << cpu_id << " MPI_Send tag: " << status.MPI_TAG;
+          std::cerr << " source: " << status.MPI_SOURCE << std::endl;
+        } else {
+          //no work, I'm idle
+          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, FLAG_IDLE, 
+              MPI_COMM_WORLD);
+          std::cerr << "cpu#" << cpu_id << " MPI_Send tag: " << status.MPI_TAG;
+          std::cerr << " source: " << status.MPI_SOURCE << std::endl;
+        }
+        break;
+      case FLAG_WHITE_TOKEN:
+          handle_white_token(s);
+        break;
+      case FLAG_BLACK_TOKEN:
+            MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+                FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
+            std::cerr << "cpu#" << cpu_id << " received BT resend BT MPI_Send tag: " << status.MPI_TAG;
+            std::cerr << " source: " << status.MPI_SOURCE << std::endl;
+
+        break;
+      case FLAG_ASK_TOKEN:
+            if (cpu_id == CPU_MASTER) {
+              handle_white_token(s);
+            }
+        break;            
+        //other message types
+      }
+  }
+}
 
 
 void permut(const Point *pointArray){
@@ -155,6 +235,7 @@ void permut(const Point *pointArray){
      */
     int job_requests = 0;
     int cpu_state = STATUS_IDLE;
+    MPI_Status status;
 
     std::vector<State *> stack; // implicit stack
     std::vector<bool> mask(pointsSize,true); 
@@ -177,9 +258,40 @@ void permut(const Point *pointArray){
       if (stack.empty()) {
         std::cerr << "cpu#" << cpu_id << " IDLE" << std::endl;
         cpu_state = STATUS_IDLE;
+        do {
+          cpu_counter++;
+          cpu_counter %= cpu_counter;
+          if (cpu_counter == cpu_id) {
+            cpu_counter++;
+            cpu_counter %= cpu_counter;
+          }
+          
+          std::cerr << "cpu#" << cpu_id << " " << job_requests << ". ask for work from cpu#";
+          std::cerr << cpu_counter << std::endl;
+
+          MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
+              FLAG_ASK_WORK, MPI_COMM_WORLD);
+
+          MPI_Recv((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
+              MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+          std::cerr << "cpu#" << cpu_id << " received tag: " << status.MPI_TAG << std::endl;
+
+        } while (job_requests++ < TRY_GET_WORK);
+        job_requests = 0;
+
+        if (cpu_state == STATUS_IDLE) {
+          MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_MASTER, 
+              FLAG_ASK_TOKEN, MPI_COMM_WORLD);
+
+          std::cerr << "cpu#" << cpu_id << " sent request for token" << std::endl;
+          //TODO shouldn't it be blocking? waiting for token
+          handle_messages(&stack);
+
+        }
 
 
-        //TODO request for work
+
         //TODO receive answer
         //
         ////TODO if request amount reaches TRY_GET_WORK, request for token
@@ -188,7 +300,9 @@ void permut(const Point *pointArray){
         //
 
         //developing end
+
         cpu_state = STATUS_FINISHING;
+        std::cerr << "cpu#" << cpu_id << " setting state to finishing" << std::endl;
       }
       
       while(!stack.empty()){
@@ -255,6 +369,7 @@ void permut(const Point *pointArray){
           delete parentState; // now I can delete parent state
           
 
+          handle_messages(&stack);
       }
     } while(cpu_state != STATUS_FINISHING);
 
