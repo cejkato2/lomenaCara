@@ -21,6 +21,15 @@ public:
      * @return
      */
     State(unsigned int indexArraySizeArgument, const Point *pointArray);
+
+    /*!
+     * reconstruction after serialization - from indexes
+     * @param indexArraySizeArgument - amount of points
+     * @param indexes - received indexes
+     * @param pointArray - array of points that was distributed
+     */
+
+    State(unsigned int indexArraySizeArgument, int *indexes, const Point *pointArray);
     /**
      * copy constructor, that creates copy which has size=sizeOriginal+1
      * @param copyFromMe state instance to copy

@@ -17,6 +17,16 @@ State::State(unsigned int indexArraySizeArgument, const Point *pointArrayArgumen
     price=0;
 }
 
+State::State(unsigned int indexArraySizeArgument, int *indexes, const Point *pointArrayArgument) {
+    pointArray = pointArrayArgument;
+    indexArraySize=indexArraySizeArgument;
+    indexArray = new unsigned int[indexArraySize];
+    for (unsigned int i=0; i<indexArraySizeArgument; ++i) {
+      indexArray[i] = indexes[i];
+    } //copy points according received indexes
+    price=0;
+}
+
 State::State(const State& original){
     
     pointArray=original.pointArray; // swallow copy
