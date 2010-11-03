@@ -91,13 +91,9 @@ unsigned int pointsSize = 0; // size of points array
 /*!
  * final solution
  */
-std::vector<Point> solution; // the solution will be stored here
+State *solution; // the solution will be stored here
 
-/*!
- * Amount of breaks of the line
- * at first it is set to the biggest available value (all '1's in binary code)
- */
-unsigned int min_breaks = (unsigned int) -1;
+
 
 int permu=0;
 
@@ -145,12 +141,14 @@ int read_points(FILE *f) {
     return SUCCESS;
 }
 
-void print(std::vector<Point> &v) {
-    std::vector<Point>::const_iterator it;
-    for (it = v.begin(); it != v.end(); ++it) {
-        std::cout << " " << *it;
+void print(State *state){
+
+    for(unsigned int i =0;i<state->getSize(); i++){
+        std::cout << " " << points[state->getIndex(i)] ;
     }
+
     std::cout << std::endl;
+
 }
 
 /*!
@@ -314,24 +312,20 @@ void permut(const Point *pointArray){
 
           if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
           { 
-              unsigned int count = parentState->getPrice();
-
-              if (count < min_breaks) {
-                std::cout << "prev min_breaks " << min_breaks;
-                min_breaks = count;
-                std::cout << " new: " << min_breaks << std::endl;
-                solution.clear();
-
-                std::vector<int> indexes = parentState->getIndexes();
+              
+              if (solution == NULL || parentState->getPrice() < solution->getPrice()) { // is parentState better then acctual solution ?
                 
-                std::vector<int>::iterator it;
-                for (it=indexes.begin(); it!=indexes.end(); ++it) {
-                  solution.push_back( points[*it] );
-                }
-                print(solution);
+                std::cout << "prev min_breaks " << (solution==NULL)? 0 : solution->getPrice();
+                std::cout << " new: " << parentState->getPrice() << std::endl;
+                
+                if(solution != NULL)
+                    delete solution; // because I have got new better solution
+
+                solution = parentState; // here I store the new solution
+              }else{
+                delete parentState; // if parentState is not a best solution
               }
               
-              delete parentState;
               continue;
 
           }
@@ -355,7 +349,7 @@ void permut(const Point *pointArray){
               while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
                   lastPosition++;
 
-              if(parentState->getExpandPrice(lastPosition) >= min_breaks) // if I cannot get better solution = bounding
+              if(solution != NULL && parentState->getExpandPrice(lastPosition) >= solution->getPrice()) // if I cannot get better solution = bounding
               {
                   lastPosition++;
                   continue;
@@ -447,11 +441,12 @@ int main(int argc, char **argv) {
     //std::cout << "All permutations:" << std::endl;
     if (cpu_id == CPU_MASTER) {
       output_stream.open("vystup2.dat");
-      for (std::vector<Point>::iterator it = solution.begin(); it != solution.end(); ++it) {
-        output_stream << it->x << " " << it->y << std::endl;
+      for (unsigned int i =0; i< ((solution == NULL)? 0 : solution->getSize()) ;i++) {
+        output_stream << (points[solution->getIndex(i)]).x << " " << points[solution->getIndex(i)].y << std::endl;
       }
       output_stream.close();
-      print(solution); // not yet solution
+      print(solution); 
+      
     }
 
 
@@ -460,6 +455,9 @@ int main(int argc, char **argv) {
     /*--------*/
 
     delete [] points;
+    
+    if(solution != NULL)
+        delete solution;
 
     
     /*!
