@@ -27,6 +27,11 @@
  */
 #define CPU_NEXT_NEIGH ((cpu_id+1)%cpu_amount)
 
+/*!
+ * how many loop cycles should cpu count before getting new message
+ */
+#define MAX_TIME_FROM_IPROBE 2
+
 enum cpustatus {
 /*!
  * cpu has no work
@@ -74,8 +79,19 @@ FLAG_BLACK_TOKEN,
 /*!
  * tell cpus to end themselves
  */
-FLAG_FINISHING
+FLAG_FINISHING,
+/*!
+ * flag for function to wait for any token
+ */
+FLAG_TOKEN,
+/*!
+ * flag for function to wait for any flag
+ */
+FLAG_ANY
 };
+
+void wait_for_message(std::vector<State *> *s, int flag, MPI_Status *status);
+
 
 /*!
  * translate mpiflags to text
@@ -195,7 +211,7 @@ State *choose_state_for_share(std::vector<State *> *sv)
   //TODO choosing algorithm:
   if (sv->size() > (unsigned int) 1) {
   State *s = sv->front();
-  //sv->erase(sv->begin());
+  sv->erase(sv->begin());
   return s;
   } else {
     std::cerr << "Error - own stack is too small, it cannot be shared" << std::endl;
@@ -212,7 +228,7 @@ void send_work(std::vector<State *> *sv, int target)
   // get some state for sending
   State *s = choose_state_for_share(sv);
 
-  std::cerr << "state: " << s << std::endl;
+  std::cerr << "state: " << *s << std::endl;
   
   unsigned int *amount = (unsigned int *) message_buf;
   unsigned int buf = s->getSize();
@@ -238,7 +254,7 @@ void send_work(std::vector<State *> *sv, int target)
       MPI_COMM_WORLD);
   std::cerr << "sent indexes" << std::endl;
 
-  std::cerr << "cpu#" << cpu_id << " MPI_Send send work" << " target: " << target << std::endl;
+  std::cerr << "cpu#" << cpu_id << " MPI_Send send work target: " << target << std::endl;
 }
 
 /*!
@@ -246,87 +262,126 @@ void send_work(std::vector<State *> *sv, int target)
  */
 void handle_white_token(std::vector<State *> *s)
 {
-    if (s->size() > 0) {
-      int *id = (int *) message_buf;
-      *id = cpu_id;
-      MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
-          FLAG_BLACK_TOKEN, MPI_COMM_WORLD);
-      std::cerr << "cpu#" << cpu_id << " received WT resend BT" << std::endl;
-    } else {
-      //no work, resend white token
-      MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
-          FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
-      std::cerr << "cpu#" << cpu_id << " received WT resend WT" << std::endl;
-    }
+  if (s->size() > 0) {
+    int *id = (int *) message_buf;
+    *id = cpu_id;
+    MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+        FLAG_BLACK_TOKEN, MPI_COMM_WORLD);
+    std::cerr << "cpu#" << cpu_id << " received WT resend BT" << std::endl;
+  } else {
+    //no work, resend white token
+    MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+        FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
+    std::cerr << "cpu#" << cpu_id << " received WT resend WT" << std::endl;
+  }
 }
 
 bool is_dividable(std::vector<State *> *s)
 {
   //TODO FIXME
-  return (s->size() >= (unsigned int) 3);
+  return (s->size() >= (unsigned int) 2);
 }
 
 /*!
  * receive MPI message if any and handle it
  * it should include sending another job
  * @param s - pointer to stack for dividing
+ * @param status - variable for storing mpi status
  */
-void handle_messages(std::vector<State *> *s)
+void handle_messages(std::vector<State *> *s, MPI_Status *status)
 {
   /*!
    * variable for storing status of message
    */
-  MPI_Status status;
-  int isMessage = 0;
-
-  MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
-  std::cerr << "cpu#" << cpu_id << " MPI_Iprobe " << isMessage << std::endl;
-  if (isMessage != 0) {
   //receive message
-    MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, status.MPI_TAG,
-      MPI_COMM_WORLD, &status);
-    std::cerr << "cpu#" << cpu_id << " MPI_Recv tag: " << getFlagName(status.MPI_TAG);
-    std::cerr << " source: " << status.MPI_SOURCE << std::endl;
+  MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status->MPI_SOURCE, status->MPI_TAG,
+    MPI_COMM_WORLD, status);
+  std::cerr << "cpu#" << cpu_id << " MPI_Recv tag: " << getFlagName(status->MPI_TAG);
+  std::cerr << " source: " << status->MPI_SOURCE << std::endl;
 
-    switch (status.MPI_TAG) {
-      case FLAG_ASK_WORK:
-        if (is_dividable(s)) {
-          send_work(s, status.MPI_SOURCE);
-        } else {
-          //no work, I'm idle
-          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, FLAG_IDLE, 
-              MPI_COMM_WORLD);
-          std::cerr << "cpu#" << cpu_id << " MPI_Send tag: " << getFlagName(status.MPI_TAG);
-          std::cerr << " source: " << status.MPI_SOURCE << std::endl;
-        }
-        break;
-      case FLAG_WHITE_TOKEN:
-          handle_white_token(s);
-        break;
-      case FLAG_BLACK_TOKEN:
-            MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
-                FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
-            std::cerr << "cpu#" << cpu_id << " received BT resend BT MPI_Send tag: " << getFlagName(status.MPI_TAG);
-            std::cerr << " source: " << status.MPI_SOURCE << std::endl;
-
-        break;
-      case FLAG_ASK_TOKEN:
-            if (cpu_id == CPU_MASTER) {
-              handle_white_token(s);
-              MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, MPI_ANY_SOURCE, MPI_ANY_TAG,
-                  MPI_COMM_WORLD, &status);
-              if (status.MPI_TAG == FLAG_WHITE_TOKEN) {
-                //everybody is idle
-                MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
-                    FLAG_FINISHING, MPI_COMM_WORLD);
-              }
-            }
-        break;            
-      case FLAG_FINISHING:
-            cpu_state = STATUS_FINISHING;
-        break;
-        //other message types
+  switch (status->MPI_TAG) {
+    case FLAG_ASK_WORK:
+      if (is_dividable(s)) {
+        send_work(s, status->MPI_SOURCE);
+      } else {
+        //no work, I'm idle
+        MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status->MPI_SOURCE, FLAG_IDLE, 
+            MPI_COMM_WORLD);
+        std::cerr << "cpu#" << cpu_id << " MPI_Send tag: " << getFlagName(status->MPI_TAG);
+        std::cerr << " source: " << status->MPI_SOURCE << std::endl;
       }
+      break;
+    case FLAG_WHITE_TOKEN:
+        //only for non CPU_MASTER
+        if (cpu_id != CPU_MASTER) {
+          handle_white_token(s);
+        }
+      break;
+    case FLAG_BLACK_TOKEN:
+        //only for non CPU_MASTER
+        if (cpu_id != CPU_MASTER) {
+          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+              FLAG_WHITE_TOKEN, MPI_COMM_WORLD);
+          std::cerr << "cpu#" << cpu_id << " received BT resend BT MPI_Send tag: " << getFlagName(status->MPI_TAG);
+          std::cerr << " source: " << status->MPI_SOURCE << std::endl;
+        }
+
+      break;
+    case FLAG_ASK_TOKEN:
+      //only for CPU_MASTER (target id in send)
+        handle_white_token(s);
+
+        MPI_Status status;
+
+        wait_for_message(s, FLAG_TOKEN, &status);
+        MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, status.MPI_TAG,
+            MPI_COMM_WORLD, &status);
+
+        if (status.MPI_TAG == FLAG_WHITE_TOKEN) {
+          //everybody is idle
+          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+              FLAG_FINISHING, MPI_COMM_WORLD);
+        }
+      break;            
+    case FLAG_FINISHING:
+      std::cerr << "cpu#" << cpu_id << " received " << getFlagName(FLAG_FINISHING) << std::endl;
+      if (cpu_id != CPU_MASTER) {
+          MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH,
+              FLAG_FINISHING, MPI_COMM_WORLD);
+      }
+      cpu_state = STATUS_FINISHING;
+      break;
+      //other message types
+  }
+}
+
+/*!
+ * Accept messages in loop and return if message has expected flag,
+ * otherwise handle_message
+ * @param s - stack for handle_message
+ * @param flag - what message to wait for, FLAG_TOKEN for any token (W/B)
+ */
+void wait_for_message(std::vector<State *> *s, int flag, MPI_Status *status)
+{
+  int isMessage = 0;
+  int tag = -1;
+
+  while (true) {
+    MPI_Probe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, status);
+    tag = status->MPI_TAG;
+
+    if (tag == FLAG_TOKEN) {
+      if ((tag == FLAG_WHITE_TOKEN) || (tag == FLAG_BLACK_TOKEN)) {
+        return;
+      }
+    } else {
+      if ((tag == flag) || (tag == FLAG_ANY)) {
+        return;
+      }
+    }
+
+    std::cerr << "cpu#" << cpu_id << " MPI_Iprobe " << isMessage << std::endl;
+    handle_messages(s, status);
   }
 }
 
@@ -342,12 +397,11 @@ void handle_request_work(std::vector<State *> *s, int target)
   MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
       FLAG_ASK_WORK, MPI_COMM_WORLD);
 
-  std::cerr << "cpu#" << cpu_id << " ask for work" << std::endl;
 
   MPI_Recv((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
       MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-  std::cerr << "cpu#" << cpu_id << " received tag: " << getFlagName(status.MPI_TAG) << std::endl;
+  std::cerr << "cpu#" << cpu_id << " asked for work, received tag: " << getFlagName(status.MPI_TAG) << std::endl;
   if (status.MPI_TAG == FLAG_SEND_WORK) {
 
     int *buf = (int *) message_buf;
@@ -360,6 +414,8 @@ void handle_request_work(std::vector<State *> *s, int target)
 
     State *ns = new State(amount, indexes, points);
     s->push_back(ns);
+    cpu_state = STATUS_WORKING;
+    std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
   }
 }
 
@@ -368,7 +424,11 @@ void permut(const Point *pointArray){
      * attempts of requests for job
      */
     int job_requests = 0;
-    MPI_Status status;
+
+    /*!
+     * number of loop cycles after last Iprobe
+     */
+    int time_from_iprobe = 0;
 
     std::vector<State *> stack; // implicit stack
     std::vector<bool> mask(pointsSize,true); 
@@ -382,10 +442,7 @@ void permut(const Point *pointArray){
       }
     }
 
-    
     int lastPosition;
-
-
 
     do {
       if (stack.empty()) {
@@ -393,10 +450,10 @@ void permut(const Point *pointArray){
         cpu_state = STATUS_IDLE;
         do {
           cpu_counter++;
-          cpu_counter %= cpu_counter;
+          cpu_counter %= cpu_amount;
           if (cpu_counter == cpu_id) {
             cpu_counter++;
-            cpu_counter %= cpu_counter;
+            cpu_counter %= cpu_amount;
           }
           
           std::cerr << "cpu#" << cpu_id << " " << job_requests << ". ask for work from cpu#";
@@ -414,11 +471,12 @@ void permut(const Point *pointArray){
 
           std::cerr << "cpu#" << cpu_id << " sent request for token" << std::endl;
 
-          MPI_Recv((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
-              MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-          std::cerr << "cpu#" << cpu_id << " received " << getFlagName(status.MPI_TAG) << std::endl;
-          //resend token to next cpu
-          //FIXME What if it is not token?
+
+          MPI_Status status;
+
+          wait_for_message(&stack, FLAG_TOKEN, &status);
+          handle_messages(&stack, &status);
+
           MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH, 
               status.MPI_TAG, MPI_COMM_WORLD);
 
@@ -444,7 +502,7 @@ void permut(const Point *pointArray){
               
               if (solution == NULL || parentState->getPrice() < solution->getPrice()) { // is parentState better then acctual solution ?
                 
-                std::cout << "prev min_breaks " << (solution==NULL)? 0 : solution->getPrice();
+                std::cout << "cpu#" << cpu_id << " prev min_breaks " << (solution==NULL)? 0 : solution->getPrice();
                 std::cout << " new: " << parentState->getPrice() << std::endl;
                 
                 if(solution != NULL)
@@ -492,7 +550,20 @@ void permut(const Point *pointArray){
           delete parentState; // now I can delete parent state
           
 
-          handle_messages(&stack);
+          
+          if (time_from_iprobe >= MAX_TIME_FROM_IPROBE) {
+            //check for new message
+            MPI_Status status;
+            int isMessage = 0;
+
+            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
+            if (isMessage != 0) {
+              std::cerr << "cpu#" << cpu_id << " received message (MPI_Iprobe)" << std::endl;
+              handle_messages(&stack, &status);
+            }
+            time_from_iprobe = 0;
+          }
+          time_from_iprobe++;
       }
     } while(cpu_state != STATUS_FINISHING);
 
