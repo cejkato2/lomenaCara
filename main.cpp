@@ -185,15 +185,60 @@ void print(State *state){
 }
 
 /*!
+ * This function should find the best State from stack, that
+ * should be sent to other cpu and delete it from own stack.
+ * @param sv own stack
+ * @return s chosen state
+ */
+State *choose_state_for_share(std::vector<State *> *sv)
+{
+  //TODO choosing algorithm:
+  if (sv->size() > (unsigned int) 1) {
+  State *s = sv->front();
+  //sv->erase(sv->begin());
+  return s;
+  } else {
+    std::cerr << "Error - own stack is too small, it cannot be shared" << std::endl;
+    return NULL;
+  }
+}
+
+
+/*!
  * divide stack s and send part to idle cpu target
  */
-void send_work(std::vector<State *> *s, int target)
+void send_work(std::vector<State *> *sv, int target)
 {
-//TODO FIXME
+  // get some state for sending
+  State *s = choose_state_for_share(sv);
+
+  std::cerr << "state: " << s << std::endl;
+  
+  unsigned int *amount = (unsigned int *) message_buf;
+  unsigned int buf = s->getSize();
+  std::cerr << "buf(amount of indexes): " << buf << std::endl;
+  int indexes[buf];
+  *amount = buf;
+
+  //send size of array
   MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, target, FLAG_SEND_WORK,
       MPI_COMM_WORLD);
-  std::cerr << "cpu#" << cpu_id << " MPI_Send send work";
-  std::cerr << " target: " << target << std::endl;
+  std::cerr << "sent amount of indexes" << std::endl;
+
+  std::vector<int> index_vector = s->getIndexes();
+  std::cerr << "indexes: ";
+  for (unsigned int i = 0; i < buf; ++i) {
+    std::cerr << index_vector[i] << " ";
+    indexes[i] = index_vector[i];
+  }
+  std::cerr << std::endl;
+
+  //send array of indexes
+  MPI_Send((void *) indexes, *amount, MPI_INT, target, FLAG_SEND_WORK,
+      MPI_COMM_WORLD);
+  std::cerr << "sent indexes" << std::endl;
+
+  std::cerr << "cpu#" << cpu_id << " MPI_Send send work" << " target: " << target << std::endl;
 }
 
 /*!
@@ -218,7 +263,7 @@ void handle_white_token(std::vector<State *> *s)
 bool is_dividable(std::vector<State *> *s)
 {
   //TODO FIXME
-  return (s->size() >= 2);
+  return (s->size() >= (unsigned int) 3);
 }
 
 /*!
@@ -373,6 +418,7 @@ void permut(const Point *pointArray){
               MPI_ANY_TAG, MPI_COMM_WORLD, &status);
           std::cerr << "cpu#" << cpu_id << " received " << getFlagName(status.MPI_TAG) << std::endl;
           //resend token to next cpu
+          //FIXME What if it is not token?
           MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH, 
               status.MPI_TAG, MPI_COMM_WORLD);
 
@@ -381,15 +427,6 @@ void permut(const Point *pointArray){
           }
 
         }
-
-        //TODO receive answer
-        //
-        ////TODO if request amount reaches TRY_GET_WORK, request for token
-        ////receive token - if it is white, wait for FLAG_FINISHING otherwise
-        ////request for job from black cpu
-        //
-
-        //developing end
 
         cpu_state = STATUS_FINISHING;
         std::cerr << "cpu#" << cpu_id << " setting state to finishing" << std::endl;
@@ -555,6 +592,7 @@ int main(int argc, char **argv) {
     /*!
      * wait for all cpus to end their job
      */
+    std::cerr << "cpu#" << cpu_id << " standing behind barrier" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
     MPI_Finalize();
 
