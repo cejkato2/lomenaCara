@@ -161,6 +161,11 @@ int cpu_state = STATUS_IDLE;
  */
 int cpu_counter;
 
+/*!
+ * number of cpu, whom I sent work
+ */
+int cpu_sent_work = -1;
+
 #define MESSAGE_BUF_SIZE 1025
 char message_buf[MESSAGE_BUF_SIZE];
 
@@ -509,6 +514,10 @@ void permut(const Point *pointArray){
     int lastPosition;
 
     do {
+      if (cpu_state == STATUS_FINISHING) {
+        break;
+      }
+
       if (stack.empty()) {
         std::cerr << "cpu#" << cpu_id << " IDLE" << std::endl;
         cpu_state = STATUS_IDLE;
@@ -524,6 +533,9 @@ void permut(const Point *pointArray){
           std::cerr << cpu_counter << std::endl;
 
           handle_request_work(&stack, cpu_counter);
+          if (cpu_state == STATUS_WORKING) {
+            break;
+          }
 
         } while (job_requests++ < TRY_GET_WORK);
         job_requests = 0;
@@ -550,8 +562,8 @@ void permut(const Point *pointArray){
 
         }
 
-        cpu_state = STATUS_FINISHING;
-        std::cerr << "cpu#" << cpu_id << " setting state to finishing" << std::endl;
+      //  cpu_state = STATUS_FINISHING;
+       // std::cerr << "cpu#" << cpu_id << " setting state to finishing" << std::endl;
       }
       
       while(!stack.empty()){
