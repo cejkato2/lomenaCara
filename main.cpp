@@ -258,6 +258,8 @@ void send_work(std::vector<State *> *sv, int target)
     //send array of indexes
     MPI_Send((void *) indexes, *amount, MPI_INT, target, FLAG_SEND_WORK,
         MPI_COMM_WORLD);
+
+    delete *it;
   }      
   std::cerr << "sent indexes" << std::endl;
 
@@ -670,18 +672,28 @@ int main(int argc, char **argv) {
     /*cleaning*/
     /*--------*/
 
-    delete [] points;
-    
-    if(solution != NULL)
-        delete solution;
-
     
     /*!
      * wait for all cpus to end their job
      */
     std::cerr << "cpu#" << cpu_id << " standing behind barrier" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
+    unsigned int myPrice = solution->getPrice();
+    unsigned int bestPrice;
+    MPI_Reduce((void *) &myPrice, (void *) &bestPrice, 1,
+        MPI_INT, MPI_MIN, CPU_MASTER, MPI_COMM_WORLD);
+
+    if (cpu_id == CPU_MASTER) {
+      std::cerr << "Best solution has " << bestPrice << " breaks..." << std::endl;
+    }
+
     MPI_Finalize();
+
+    delete [] points;
+    
+    if(solution != NULL)
+        delete solution;
+
 
 
     return (return_val);
