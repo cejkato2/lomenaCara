@@ -1,6 +1,6 @@
 #!/bin/bash
 set -x
-rm -f testdate/*.png
+rm -f testdate/png/*.png
 
 for i in testdata/test*; do 
   echo ${i}; 

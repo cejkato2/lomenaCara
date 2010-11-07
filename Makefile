@@ -20,6 +20,9 @@ clean:
 	rm -f a.out testdqueue perm testdata/png/*.png
 	rm -rf doc/*
 
+runP:
+	./testpara.sh
+
 test:  
 	@echo Test for error
 	@echo Test1
