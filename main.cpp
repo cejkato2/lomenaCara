@@ -226,32 +226,39 @@ State *choose_state_for_share(std::vector<State *> *sv)
 void send_work(std::vector<State *> *sv, int target)
 {
   // get some state for sending
-  State *s = choose_state_for_share(sv);
-
-  std::cerr << "state: " << *s << std::endl;
+  std::vector<State *> list = choose_state_for_share(sv);
   
+  //send amount of States
   unsigned int *amount = (unsigned int *) message_buf;
-  unsigned int buf = s->getSize();
-  std::cerr << "buf(amount of indexes): " << buf << std::endl;
-  int indexes[buf];
+  unsigned int buf = list.size();
+  std::cerr << "buf(amount of states): " << buf << std::endl;
   *amount = buf;
-
-  //send size of array
   MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, target, FLAG_SEND_WORK,
       MPI_COMM_WORLD);
-  std::cerr << "sent amount of indexes" << std::endl;
 
-  std::vector<int> index_vector = s->getIndexes();
-  std::cerr << "indexes: ";
-  for (unsigned int i = 0; i < buf; ++i) {
-    std::cerr << index_vector[i] << " ";
-    indexes[i] = index_vector[i];
-  }
-  std::cerr << std::endl;
 
-  //send array of indexes
-  MPI_Send((void *) indexes, *amount, MPI_INT, target, FLAG_SEND_WORK,
-      MPI_COMM_WORLD);
+  //send States
+  std::vector<State *>::iterator it;
+  for (it=list.begin(); it!=list.end(); ++it) {
+    amount = (unsigned int *) message_buf;
+    buf = (*it)->getSize();
+    std::cerr << "buf(amount of indexes): " << buf << std::endl;
+    *amount = buf;
+    //send size of array
+    MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, target, FLAG_SEND_WORK,
+        MPI_COMM_WORLD);
+
+    unsigned int *indexes = (*it)->getArrayPointerIndexes();
+    std::cerr << "indexes: ";
+    for (unsigned int i = 0; i < buf; ++i) {
+      std::cerr << indexes[i] << " ";
+    }
+    std::cerr << std::endl;
+
+    //send array of indexes
+    MPI_Send((void *) indexes, *amount, MPI_INT, target, FLAG_SEND_WORK,
+        MPI_COMM_WORLD);
+  }      
   std::cerr << "sent indexes" << std::endl;
 
   std::cerr << "cpu#" << cpu_id << " MPI_Send send work target: " << target << std::endl;
@@ -404,18 +411,27 @@ void handle_request_work(std::vector<State *> *s, int target)
   std::cerr << "cpu#" << cpu_id << " asked for work, received tag: " << getFlagName(status.MPI_TAG) << std::endl;
   if (status.MPI_TAG == FLAG_SEND_WORK) {
 
+    //get amount of states
     int *buf = (int *) message_buf;
-    int amount = *buf;
+    int amount_states = *buf;
 
-    int indexes[amount];
+    for (int i=0; i<amount_states; ++i) {
+      //receive amount of indexes
+      MPI_Recv((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, cpu_counter, 
+          MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      int *buf = (int *) message_buf;
+      int amount = *buf;
+      int indexes[amount];
 
-    MPI_Recv((void *) indexes, amount, MPI_INT, cpu_counter, 
-        MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+      //receive array of indexes
+      MPI_Recv((void *) indexes, amount, MPI_INT, cpu_counter, 
+          MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-    State *ns = new State(amount, indexes, points);
-    s->push_back(ns);
+      State *ns = new State(amount, indexes, points);
+      s->push_back(ns);
+      std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
+    }
     cpu_state = STATUS_WORKING;
-    std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
   }
 }
 

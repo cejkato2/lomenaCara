@@ -72,6 +72,11 @@ public:
     std::vector<int> getIndexes();
 
     /**
+     * @return array of indexes
+     */
+    unsigned int *getArrayPointerIndexes();
+
+    /**
      * function that returns acctual count of breaks = price
      * @return
      */

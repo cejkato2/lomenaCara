@@ -47,6 +47,11 @@ State::~State() {
     indexArray = NULL;
 }
 
+unsigned int *State::getArrayPointerIndexes()
+{ 
+  return indexArray;
+}
+
 int State::setLastIndex(unsigned int value){
 
     indexArray[indexArraySize-1] = value; // setting up last value
