@@ -568,6 +568,7 @@ void permut(const Point *pointArray){
                 
                 std::cout << "cpu#" << cpu_id << " prev min_breaks " << ((solution==NULL)? 0 : solution->getPrice());
                 std::cout << " new: " << parentState->getPrice() << std::endl;
+                std::cout << *parentState << std::endl;
                 
                 if(solution != NULL)
                     delete solution; // because I have got new better solution
@@ -620,11 +621,13 @@ void permut(const Point *pointArray){
             MPI_Status status;
             int isMessage = 0;
 
-            MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
-            if (isMessage != 0) {
-              std::cerr << "cpu#" << cpu_id << " received message (MPI_Iprobe)" << std::endl;
-              handle_messages(&stack, &status);
-            }
+            do {
+              MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
+              if (isMessage != 0) {
+                std::cerr << "cpu#" << cpu_id << " received message (MPI_Iprobe)" << std::endl;
+                handle_messages(&stack, &status);
+              }
+            } while (isMessage != 0);
             time_from_iprobe = 0;
           }
           time_from_iprobe++;
