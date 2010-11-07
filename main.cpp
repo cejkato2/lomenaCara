@@ -201,6 +201,21 @@ void print(State *state){
 }
 
 /*!
+ * This function test stack, if dividable then returns true else false
+ * @param sv own stack
+ * @return s chosen state
+ */
+bool is_dividable(std::vector<State *> *s)
+{
+  //TODO FIXME
+
+    if((s->size() >= (unsigned int) 2))
+        return true;
+  
+    else return false;
+  
+}
+/*!
  * This function should find the best State from stack, that
  * should be sent to other cpu and delete it from own stack.
  * @param sv own stack
@@ -209,7 +224,7 @@ void print(State *state){
 std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
 {
 
-    if(sv->size() < (unsigned) 1) // stack has only one state object, cannot be divided
+    if(!is_dividable(sv)) // stack has only one state object, cannot be divided
     {
     std::cerr << "Error - own stack is too small, it cannot be shared" << std::endl;
     return std::vector<State *>();
@@ -320,11 +335,7 @@ void handle_white_token(std::vector<State *> *s)
   }
 }
 
-bool is_dividable(std::vector<State *> *s)
-{
-  //TODO FIXME
-  return (s->size() >= (unsigned int) 2);
-}
+
 
 /*!
  * receive MPI message if any and handle it
