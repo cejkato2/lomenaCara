@@ -206,17 +206,52 @@ void print(State *state){
  * @param sv own stack
  * @return s chosen state
  */
-State *choose_state_for_share(std::vector<State *> *sv)
+std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
 {
-  //TODO choosing algorithm:
-  if (sv->size() > (unsigned int) 1) {
-  State *s = sv->front();
-  sv->erase(sv->begin());
-  return s;
-  } else {
+
+    if(sv->size() < (unsigned) 1) // stack has only one state object, cannot be divided
+    {
     std::cerr << "Error - own stack is too small, it cannot be shared" << std::endl;
-    return NULL;
-  }
+    return std::vector<State *>();
+    }
+
+
+    int countSameLevel = 0;
+    unsigned int level= sv->at(0)->getSize();
+
+    std::vector<State *>::iterator it;
+
+    // here i count states on the tom level
+    for ( it=sv->begin() ; it < sv->end(); it++ )
+    {
+        if(level == (*it)->getSize())
+            countSameLevel++;
+        else
+            break;
+    }
+
+    // divide half
+    int howManyStates = ( (countSameLevel - (countSameLevel % 2)) / 2 );
+
+    if(howManyStates == 0)
+        howManyStates = 1;
+
+
+    std::vector<State *> ret = std::vector<State *>();
+    ret.reserve( (unsigned) howManyStates );
+
+    // get states pointers
+    int i =0;
+     for ( it=sv->begin(); i<howManyStates; it++, i++ ){
+         ret.push_back(*it);
+     }
+
+    // delete those states pointers from stack
+
+    sv->erase(sv->begin(), it);
+
+
+    return ret;
 }
 
 
