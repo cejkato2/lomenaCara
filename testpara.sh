@@ -1,5 +1,6 @@
 #!/bin/bash
 set -x
+mkdir -p testdata/pngPara
 rm -f testdate/pngPara/*.png
 
 for i in testdata/test*; do 
