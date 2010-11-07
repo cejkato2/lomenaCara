@@ -564,9 +564,9 @@ void permut(const Point *pointArray){
           if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
           { 
               
-              if (solution == NULL || parentState->getPrice() < solution->getPrice()) { // is parentState better then acctual solution ?
+              if ((solution == NULL) || (parentState->getPrice() < solution->getPrice())) { // is parentState better then acctual solution ?
                 
-                std::cout << "cpu#" << cpu_id << " prev min_breaks " << (solution==NULL)? 0 : solution->getPrice();
+                std::cout << "cpu#" << cpu_id << " prev min_breaks " << ((solution==NULL)? 0 : solution->getPrice());
                 std::cout << " new: " << parentState->getPrice() << std::endl;
                 
                 if(solution != NULL)
