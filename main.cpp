@@ -222,7 +222,7 @@ bool is_dividable(std::vector<State *> *s)
 }
 /*!
  * This function should find the best State from stack, that
- * should be sent to other cpu and delete it from own stack.
+ * should be sent to other cpu and delete it from own stack. We use D-ADZ algorithm
  * @param sv own stack
  * @return s chosen state
  */
