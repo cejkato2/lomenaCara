@@ -480,7 +480,7 @@ void handle_request_work(std::vector<State *> *s, int target)
       MPI_Recv((void *) indexes, amount, MPI_INT, cpu_counter, 
           MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-      State *ns = new State(amount, indexes, points);
+      State *ns = new State(amount, points, indexes);
       s->push_back(ns);
       std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
     }

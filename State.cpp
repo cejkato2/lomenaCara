@@ -14,17 +14,19 @@ State::State(unsigned int indexArraySizeArgument, const Point *pointArrayArgumen
     pointArray=pointArrayArgument; // swallow copy
     indexArraySize=indexArraySizeArgument;
     indexArray = new unsigned int[indexArraySize];
-    price=0;
+    price=0; // it is new empty state, price should be zero
 }
 
-State::State(unsigned int indexArraySizeArgument, int *indexes, const Point *pointArrayArgument) {
+State::State(unsigned int indexArraySizeArgument, const Point *pointArrayArgument, int *indexes) {
     pointArray = pointArrayArgument;
     indexArraySize=indexArraySizeArgument;
     indexArray = new unsigned int[indexArraySize];
-    for (unsigned int i=0; i<indexArraySizeArgument; ++i) {
+    for (unsigned int i=0; i<indexArraySizeArgument; ++i) { // I dont like this copying
       indexArray[i] = indexes[i];
     } //copy points according received indexes
-    price=0;
+
+    reCountPrice();
+
 }
 
 State::State(const State& original){
@@ -96,7 +98,7 @@ unsigned int State::getPrice(){
 
 unsigned int State::getExpandPrice(int index){
 
- if(indexArraySize < 2) // i know only 2, then there is no break
+ if(indexArraySize < 2) // i know only 1, if any point is added then there cannot be a break
         return 0;
 
     // counting breaks
@@ -108,5 +110,27 @@ unsigned int State::getExpandPrice(int index){
 
 }
 
+unsigned int State::reCountPrice(){
 
+ if(indexArraySize < 3) // i know only 2, then there is no break
+        return 0;
+
+    price = 0;
+    Point a,b,c;
+
+    for(unsigned int i=2; i<indexArraySize; i++){
+
+        a = pointArray[indexArray[i-2]]; // first point
+        b = pointArray[indexArray[i]]; // second point
+        c = pointArray[indexArray[i-1]]; // the middle one
+
+        // std::cout << "counting isOnSegment(" << a << ", "<< b << ", " << c << ")" << std::endl;
+        if (!isOnSegment(&a, &b, &c)) // is c on line between a and b
+            price++;
+
+    }
+
+    return price;
+
+}
 

@@ -12,10 +12,13 @@
 #include <ostream>
 #include "types.h"
 
+/**
+ this class represents state in DFS algorithm
+ */
 class State {
 public:
     /**
-     * this class represents state in DFS algorithm
+     * standard constructor that creates empty State
      * @param indexArraySizeArgument amount of points/indexes
      * @param pointArray need to know for breaks calculation
      * @return
@@ -23,15 +26,17 @@ public:
     State(unsigned int indexArraySizeArgument, const Point *pointArray);
 
     /*!
-     * reconstruction after serialization - from indexes
+     * constructor which is used for reconstruction after serialization - from indexes
      * @param indexArraySizeArgument - amount of points
      * @param indexes - received indexes
      * @param pointArray - array of points that was distributed
      */
 
-    State(unsigned int indexArraySizeArgument, int *indexes, const Point *pointArray);
+    State(unsigned int indexArraySizeArgument,  const Point *pointArray, int *indexes);
+
     /**
-     * copy constructor, that creates copy which has size=sizeOriginal+1
+     * something like a copy constructor, that creates copy
+     * which has size=sizeOriginal+1 because new expanded State is bigger.
      * @param copyFromMe state instance to copy
      * @return
      */
@@ -46,7 +51,8 @@ public:
      */
      int setLastIndex(unsigned int value);
     /**
-     * return index value
+     * this function set last index of array
+     * this function need the right pointArray, indexArraySize and indexArray, 
      * @param position position
      * @return value or -2 if value was not set yet, -1 if position is out of bounds
      */
@@ -83,7 +89,8 @@ public:
    virtual unsigned int getPrice();
 
    /**
-    * it is good to know if a price will be higher,
+    * it is good to know if a price will be higher, if the point pointsArray[index] will be stored
+    * this function need the right pointArray, indexArraySize and indexArray,
     * @param index index that will be added in the future
     * @return price of state if I add index
     */
@@ -147,10 +154,35 @@ static inline bool isOnSegment(const Point *a, const Point *b, const Point *c) {
 }
 
 private:
+
+    /**
+     * function that recount price or count of breaks on a line defined via indexes
+     * this function need the right pointArray, indexArraySize and indexArray,
+     * price is stored and also returned
+     * @return recounted price
+     */
+    unsigned int reCountPrice();
+
+    /**
+     * this is a pointer to array of Points, points are accesed via indexes
+     * and used in computations of breaks
+     */
    const Point *pointArray;
+
+   /**
+    * size of array indexes
+    */
     unsigned int indexArraySize;
+
+    /**
+     * array of indexes
+     */
     unsigned int *indexArray;
-    unsigned int price; // also count of breaks
+
+    /**
+     * also known as count of breaks
+     */
+    unsigned int price; // 
 };
 
 #endif	/* _STATE_H */
