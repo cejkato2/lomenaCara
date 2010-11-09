@@ -262,15 +262,13 @@ std::vector<State *> choose_state_for_share(std::list<State *> &stack)
     ret.reserve( (unsigned) howManyStates );
 
     // get states pointers
-    int i =0;
-     for ( it=stack.begin(); i<howManyStates; it++, i++ ){
-         ret.push_back(*it);
+    
+     for ( int i =0; i<howManyStates; i++ ){
+         ret.push_back(stack.front()); // take state from front of stack
+         stack.pop_front(); // delete state from front of stack
      }
 
-    // delete those states pointers from stack
-
-    stack.erase(stack.begin(), it);
-
+    
 
     return ret;
 }
