@@ -210,11 +210,11 @@ void print(State *state){
  * @param sv own stack
  * @return s chosen state
  */
-bool is_dividable(std::vector<State *> *s)
+bool is_dividable(std::vector<State *> *stack)
 {
   //TODO FIXME
 
-    if((s->size() >= (unsigned int) 2))
+    if((stack->size() >= (unsigned int) 2))
         return true;
   
     else return false;
@@ -223,13 +223,13 @@ bool is_dividable(std::vector<State *> *s)
 /*!
  * This function should find the best State from stack, that
  * should be sent to other cpu and delete it from own stack. We use D-ADZ algorithm
- * @param sv own stack
+ * @param stack own stack
  * @return s chosen state
  */
-std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
+std::vector<State *> choose_state_for_share(std::vector<State *> *stack)
 {
 
-    if(!is_dividable(sv)) // stack has only one state object, cannot be divided
+    if(!is_dividable(stack)) // stack has only one state object, cannot be divided
     {
     std::cerr << "Error - own stack is too small, it cannot be shared" << std::endl;
     return std::vector<State *>();
@@ -237,12 +237,12 @@ std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
 
 
     int countSameLevel = 0;
-    unsigned int level= sv->at(0)->getSize();
+    unsigned int level= stack->at(0)->getSize();
 
     std::vector<State *>::iterator it;
 
     // here i count states on the tom level
-    for ( it=sv->begin() ; it < sv->end(); it++ )
+    for ( it=stack->begin() ; it < stack->end(); it++ )
     {
         if(level == (*it)->getSize())
             countSameLevel++;
@@ -262,13 +262,13 @@ std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
 
     // get states pointers
     int i =0;
-     for ( it=sv->begin(); i<howManyStates; it++, i++ ){
+     for ( it=stack->begin(); i<howManyStates; it++, i++ ){
          ret.push_back(*it);
      }
 
     // delete those states pointers from stack
 
-    sv->erase(sv->begin(), it);
+    stack->erase(stack->begin(), it);
 
 
     return ret;
@@ -278,10 +278,10 @@ std::vector<State *> choose_state_for_share(std::vector<State *> *sv)
 /*!
  * divide stack s and send part to idle cpu target
  */
-void send_work(std::vector<State *> *sv, int target)
+void send_work(std::vector<State *> *stack, int target)
 {
   // get some state for sending
-  std::vector<State *> list = choose_state_for_share(sv);
+  std::vector<State *> list = choose_state_for_share(stack);
   
   //send amount of States
   unsigned int *amount = (unsigned int *) message_buf;
@@ -324,7 +324,7 @@ void send_work(std::vector<State *> *sv, int target)
 /*!
  * Decide whether to resend white or black token
  */
-void handle_white_token(std::vector<State *> *s)
+void handle_white_token(std::vector<State *> *stack)
 {
   if (cpu_state == STATUS_WORKING) {
     int *id = (int *) message_buf;
@@ -345,10 +345,10 @@ void handle_white_token(std::vector<State *> *s)
 /*!
  * receive MPI message if any and handle it
  * it should include sending another job
- * @param s - pointer to stack for dividing
+ * @param stack - pointer to stack for dividing
  * @param status - variable for storing mpi status
  */
-void handle_messages(std::vector<State *> *s, MPI_Status *status)
+void handle_messages(std::vector<State *> *stack, MPI_Status *status)
 {
   /*!
    * variable for storing status of message
@@ -361,8 +361,8 @@ void handle_messages(std::vector<State *> *s, MPI_Status *status)
 
   switch (status->MPI_TAG) {
     case FLAG_ASK_WORK: {
-      if (is_dividable(s)) {
-        send_work(s, status->MPI_SOURCE);
+      if (is_dividable(stack)) {
+        send_work(stack, status->MPI_SOURCE);
       } else {
         //no work, I'm idle
         MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status->MPI_SOURCE, FLAG_IDLE, 
@@ -375,7 +375,7 @@ void handle_messages(std::vector<State *> *s, MPI_Status *status)
     case FLAG_WHITE_TOKEN: {
         //only for non CPU_MASTER
         if (cpu_id != CPU_MASTER) {
-          handle_white_token(s);
+          handle_white_token(stack);
         } else {
           std::cerr << "CPU_MASTER in FLAG_WHITE_TOKEN ERROR!!!" << std::endl;
         }
@@ -396,11 +396,11 @@ void handle_messages(std::vector<State *> *s, MPI_Status *status)
     case FLAG_ASK_TOKEN: {
       //only for CPU_MASTER (target id in send)
 
-        handle_white_token(s);
+        handle_white_token(stack);
 
         MPI_Status status;
 
-        wait_for_message(s, FLAG_TOKEN, &status);
+        wait_for_message(stack, FLAG_TOKEN, &status);
 
         MPI_Recv(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, status.MPI_SOURCE, MPI_ANY_TAG,
             MPI_COMM_WORLD, &status);
@@ -431,10 +431,10 @@ void handle_messages(std::vector<State *> *s, MPI_Status *status)
 /*!
  * Accept messages in loop and return if message has expected flag,
  * otherwise handle_message
- * @param s - stack for handle_message
+ * @param stack - stack for handle_message
  * @param flag - what message to wait for, FLAG_TOKEN for any token (W/B)
  */
-void wait_for_message(std::vector<State *> *s, int flag, MPI_Status *status)
+void wait_for_message(std::vector<State *> *stack, int flag, MPI_Status *status)
 {
   int isMessage = 0;
   int tag = -1;
@@ -456,16 +456,16 @@ void wait_for_message(std::vector<State *> *s, int flag, MPI_Status *status)
     }
 
     std::cerr << "cpu#" << cpu_id << " MPI_Iprobe " << isMessage << std::endl;
-    handle_messages(s, status);
+    handle_messages(stack, status);
   }
 }
 
 /*!
  * send request for work to target cpu and receive its answer
- * @param s - private stack
+ * @param stack - private stack
  * @param target - number of cpu, whom to ask
  */
-void handle_request_work(std::vector<State *> *s, int target)
+void handle_request_work(std::vector<State *> *stack, int target)
 {
   MPI_Status status;
 
@@ -496,7 +496,7 @@ void handle_request_work(std::vector<State *> *s, int target)
           MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
       State *ns = new State(amount, points, indexes);
-      s->push_back(ns);
+      stack->push_back(ns);
       std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
     }
     cpu_state = STATUS_WORKING;
