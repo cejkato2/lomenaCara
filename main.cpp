@@ -592,7 +592,7 @@ void permut(const Point *pointArray){
           State *parentState=stack.back();
           stack.pop_back();
 
-          solution = parentState->expand(stack, solution, mask, cpu_id, pointsSize);
+           parentState->expand(stack, solution, mask, cpu_id, pointsSize);
           
           if (time_from_iprobe >= MAX_TIME_FROM_IPROBE) {
             //check for new message

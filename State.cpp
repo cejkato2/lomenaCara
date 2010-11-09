@@ -134,7 +134,7 @@ unsigned int State::reCountPrice(){
 
 }
 
-State* State::expand(std::list<State*> &stack, State *solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize){
+void State::expand(std::list<State*> &stack, State *&solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize){
 
 
           if(this->getSize()==pointsSize) // if I am on a floor, I cannot expand
@@ -156,7 +156,7 @@ State* State::expand(std::list<State*> &stack, State *solution, std::vector<bool
                 delete this; // if parentState is not a best solution
               }
 
-              return solution;
+              return ;
 
           }
 
@@ -192,6 +192,6 @@ State* State::expand(std::list<State*> &stack, State *solution, std::vector<bool
           }
           delete this; // now I can delete parent state
 
-          return solution;
+          return ;
 
 }
