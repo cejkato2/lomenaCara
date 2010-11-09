@@ -287,7 +287,7 @@ void send_work(std::list<State *> *stack, int target)
   //send amount of States
   unsigned int *amount = (unsigned int *) message_buf;
   unsigned int buf = list.size();
-  std::cerr << "buf(amount of states): " << buf << std::endl;
+  std::cerr << "cpu#" << cpu_id << "buf(amount of states): " << buf << std::endl;
   *amount = buf;
   MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, target, FLAG_SEND_WORK,
       MPI_COMM_WORLD);
@@ -298,7 +298,7 @@ void send_work(std::list<State *> *stack, int target)
   for (it=list.begin(); it!=list.end(); ++it) {
     amount = (unsigned int *) message_buf;
     buf = (*it)->getSize();
-    std::cerr << "buf(amount of indexes): " << buf << std::endl;
+    std::cerr << "cpu#" << cpu_id << "buf(amount of indexes): " << buf << std::endl;
     *amount = buf;
     //send size of array
     MPI_Send(message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, target, FLAG_SEND_WORK,
@@ -529,7 +529,7 @@ void permut(const Point *pointArray){
       }
     }
 
-    int lastPosition;
+    
 
     do {
       if (cpu_state == STATUS_FINISHING) {
@@ -594,62 +594,7 @@ void permut(const Point *pointArray){
           State *parentState=stack.back();
           stack.pop_back();
 
-          
-
-          if(parentState->getSize()==pointsSize) // if I am on a floor, I cannot expand
-          { 
-              
-              if ((solution == NULL) || (parentState->getPrice() < solution->getPrice())) { // is parentState better then acctual solution ?
-                
-                std::cout << "cpu#" << cpu_id << " prev min_breaks " << ((solution==NULL)? 0 : solution->getPrice());
-                std::cout << " new: " << parentState->getPrice() << std::endl;
-                std::cout << *parentState << std::endl;
-                
-                if(solution != NULL)
-                    delete solution; // because I have got new better solution
-
-                solution = parentState; // here I store the new solution
-              }else{
-                delete parentState; // if parentState is not a best solution
-              }
-              
-              continue;
-
-          }
-
-          lastPosition=0;
-          
-          // set all mask variables to true
-          for(unsigned int i=0;i<pointsSize;i++){
-              mask[i]=true;
-          }
-
-          
-          // set mask variables depend on used indexes
-          for(unsigned int i=0;i<parentState->getSize();i++){
-              mask[parentState->getIndex(i)]=false;
-          }
-
-          // here I expand my state to stack
-          for(unsigned int i=0;i<pointsSize-parentState->getSize();i++){
-              
-              while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
-                  lastPosition++;
-
-              if(solution != NULL && parentState->getExpandPrice(lastPosition) >= solution->getPrice()) // if I cannot get better solution = bounding
-              {
-                  lastPosition++;
-                  continue;
-              }
-
-              State *childState = new State(*parentState); // here I make a deep copy
-              childState->setLastIndex(lastPosition); // add a new part of state
-              lastPosition++;
-              stack.push_back(childState);
-          }
-          delete parentState; // now I can delete parent state
-          
-
+          parentState->expand(stack, solution, mask, cpu_id, pointsSize);
           
           if (time_from_iprobe >= MAX_TIME_FROM_IPROBE) {
             //check for new message

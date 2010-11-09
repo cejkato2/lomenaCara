@@ -9,6 +9,8 @@
 #define	_STATE_H
 
 #include <vector>
+#include <list>
+#include <iostream>
 #include <ostream>
 #include "types.h"
 
@@ -95,6 +97,24 @@ public:
     * @return price of state if I add index
     */
    virtual unsigned int getExpandPrice(int index);
+
+   /**
+    * function that expand state to stack, if state is a leaf of DFS tree then is stored as a solution
+    * @param stack
+    * @param solution
+    * @param mask reusable variable
+    * @param cpu_id
+    * @param pointsSize size of pointsArray
+    */
+   void expand(std::list<State *> &stack, State *solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize);
+
+   /**
+    *  outputstream operator
+    * @param a
+    * @param b
+    * @param c
+    * @return
+    */
    friend std::ostream& operator<< (std::ostream &out, const State &myState){
 
      for(unsigned int i=0;i<myState.getSize();i++){
