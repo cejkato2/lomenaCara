@@ -91,7 +91,7 @@ FLAG_TOKEN,
 FLAG_ANY
 };
 
-void wait_for_message(std::list<State *> *s, int flag, MPI_Status *status);
+void wait_for_message(std::list<State *> &stack, int flag, MPI_Status *status);
 
 
 /*!
@@ -211,11 +211,11 @@ void print(State *state){
  * @param sv own stack
  * @return s chosen state
  */
-bool is_dividable(std::list<State *> *stack)
+bool is_dividable(std::list<State *> &stack)
 {
   //TODO FIXME
 
-    if((stack->size() >= (unsigned int) 2))
+    if((stack.size() >= (unsigned int) 2))
         return true;
   
     else return false;
@@ -227,7 +227,7 @@ bool is_dividable(std::list<State *> *stack)
  * @param stack own stack
  * @return s chosen state
  */
-std::vector<State *> choose_state_for_share(std::list<State *> *stack)
+std::vector<State *> choose_state_for_share(std::list<State *> &stack)
 {
 
     if(!is_dividable(stack)) // stack has only one state object, cannot be divided
@@ -238,12 +238,12 @@ std::vector<State *> choose_state_for_share(std::list<State *> *stack)
 
 
     int countSameLevel = 0;
-    unsigned int level= stack->front()->getSize();
+    unsigned int level= stack.front()->getSize();
 
     std::list<State *>::iterator it;
 
     // here i count states on the tom level
-    for ( it=stack->begin() ; it != stack->end(); it++ )
+    for ( it=stack.begin() ; it != stack.end(); it++ )
     {
         if(level == (*it)->getSize())
             countSameLevel++;
@@ -263,13 +263,13 @@ std::vector<State *> choose_state_for_share(std::list<State *> *stack)
 
     // get states pointers
     int i =0;
-     for ( it=stack->begin(); i<howManyStates; it++, i++ ){
+     for ( it=stack.begin(); i<howManyStates; it++, i++ ){
          ret.push_back(*it);
      }
 
     // delete those states pointers from stack
 
-    stack->erase(stack->begin(), it);
+    stack.erase(stack.begin(), it);
 
 
     return ret;
@@ -279,7 +279,7 @@ std::vector<State *> choose_state_for_share(std::list<State *> *stack)
 /*!
  * divide stack s and send part to idle cpu target
  */
-void send_work(std::list<State *> *stack, int target)
+void send_work(std::list<State *> &stack, int target)
 {
   // get some state for sending
   std::vector<State *> list = choose_state_for_share(stack);
@@ -351,7 +351,7 @@ void handle_white_token()
  * @param stack - pointer to stack for dividing
  * @param status - variable for storing mpi status
  */
-void handle_messages(std::list<State *> *stack, MPI_Status *status)
+void handle_messages(std::list<State *> &stack, MPI_Status *status)
 {
   /*!
    * variable for storing status of message
@@ -437,7 +437,7 @@ void handle_messages(std::list<State *> *stack, MPI_Status *status)
  * @param stack - stack for handle_message
  * @param flag - what message to wait for, FLAG_TOKEN for any token (W/B)
  */
-void wait_for_message(std::list<State *> *stack, int flag, MPI_Status *status)
+void wait_for_message(std::list<State *> &stack, int flag, MPI_Status *status)
 {
   int isMessage = 0;
   int tag = -1;
@@ -468,7 +468,7 @@ void wait_for_message(std::list<State *> *stack, int flag, MPI_Status *status)
  * @param stack - private stack
  * @param target - number of cpu, whom to ask
  */
-void handle_request_work(std::list<State *> *stack, int target)
+void handle_request_work(std::list<State *> &stack, int target)
 {
   MPI_Status status;
 
@@ -499,7 +499,7 @@ void handle_request_work(std::list<State *> *stack, int target)
           MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
       State *ns = new State(amount, points, indexes);
-      stack->push_back(ns);
+      stack.push_back(ns);
       std::cerr << "cpu#" << cpu_id << " got work: " << *ns << std::endl;
     }
     cpu_state = STATUS_WORKING;
@@ -550,7 +550,7 @@ void permut(const Point *pointArray){
           std::cerr << "cpu#" << cpu_id << " " << job_requests << ". ask for work from cpu#";
           std::cerr << cpu_counter << std::endl;
 
-          handle_request_work(&stack, cpu_counter);
+          handle_request_work(stack, cpu_counter);
           if (cpu_state == STATUS_WORKING) {
             break;
           }
@@ -568,8 +568,8 @@ void permut(const Point *pointArray){
 
           MPI_Status status;
 
-          wait_for_message(&stack, FLAG_TOKEN, &status);
-          handle_messages(&stack, &status);
+          wait_for_message(stack, FLAG_TOKEN, &status);
+          handle_messages(stack, &status);
 
           MPI_Send((void *) message_buf, MESSAGE_BUF_SIZE, MPI_CHAR, CPU_NEXT_NEIGH, 
               status.MPI_TAG, MPI_COMM_WORLD);
@@ -605,7 +605,7 @@ void permut(const Point *pointArray){
               MPI_Iprobe(MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &isMessage, &status);
               if (isMessage != 0) {
                 std::cerr << "cpu#" << cpu_id << " received message (MPI_Iprobe)" << std::endl;
-                handle_messages(&stack, &status);
+                handle_messages(stack, &status);
               }
             } while (isMessage != 0);
             time_from_iprobe = 0;
