@@ -167,7 +167,7 @@ int cpu_counter;
  */
 int cpu_sent_work = -1;
 
-#define MESSAGE_BUF_SIZE 1025
+#define MESSAGE_BUF_SIZE 500
 char message_buf[MESSAGE_BUF_SIZE];
 
 int read_points(FILE *f) {
@@ -592,7 +592,7 @@ void permut(const Point *pointArray){
           State *parentState=stack.back();
           stack.pop_back();
 
-          parentState->expand(stack, solution, mask, cpu_id, pointsSize);
+          solution = parentState->expand(stack, solution, mask, cpu_id, pointsSize);
           
           if (time_from_iprobe >= MAX_TIME_FROM_IPROBE) {
             //check for new message

@@ -134,7 +134,7 @@ unsigned int State::reCountPrice(){
 
 }
 
-void State::expand(std::list<State*> &stack, State* solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize){
+State* State::expand(std::list<State*> &stack, State *solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize){
 
 
           if(this->getSize()==pointsSize) // if I am on a floor, I cannot expand
@@ -143,18 +143,20 @@ void State::expand(std::list<State*> &stack, State* solution, std::vector<bool> 
               if ((solution == NULL) || (this->getPrice() < solution->getPrice())) { // is parentState better then acctual solution ?
 
                 std::cout << "cpu#" << cpu_id << " prev min_breaks " << ((solution==NULL)? 0 : solution->getPrice());
-                std::cout << " new: " << this->getPrice() << std::endl;
-                std::cout << *this << std::endl;
+                
+                //std::cout << *this << std::endl;
 
                 if(solution != NULL)
                     delete solution; // because I have got new better solution
 
                 solution = this; // here I store the new solution
+
+                std::cout << " new: " << solution->getPrice() << std::endl;
               }else{
                 delete this; // if parentState is not a best solution
               }
 
-              return;
+              return solution;
 
           }
 
@@ -177,7 +179,7 @@ void State::expand(std::list<State*> &stack, State* solution, std::vector<bool> 
               while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
                   lastPosition++;
 
-              if(solution != NULL && this->getExpandPrice(lastPosition) >= solution->getPrice()) // if I cannot get better solution = bounding
+              if(solution != NULL && ( this->getExpandPrice(lastPosition) >= solution->getPrice() )) // if I cannot get better solution = bounding
               {
                   lastPosition++;
                   continue;
@@ -190,6 +192,6 @@ void State::expand(std::list<State*> &stack, State* solution, std::vector<bool> 
           }
           delete this; // now I can delete parent state
 
-          return;
+          return solution;
 
 }
