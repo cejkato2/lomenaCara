@@ -285,6 +285,7 @@ void sendWork(std::list<State *> &stack, int target) {
     if (!is_dividable(stack)) { // stack is not dividable -> cannot send work
         buffer[LENGHT_POSITION] = 0; // set size of data to zero, no data will be send
         sendMessage(target, MSG_NO_WORK);
+        return;
     }
 
     // get some state for sending
@@ -390,7 +391,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
 
             if ((tryToGetWork > cpu_amount) && (cpu_id == CPU_MASTER) && (cpu_state == STATUS_IDLE)) // I am CPU_MASTER and I tried to get work, but nobody give it to me -> send white token
             {
-                buffer[0] = 0;
+                buffer[LENGHT_POSITION] = 0;
                 sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
 
             } else {
@@ -408,11 +409,11 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             if (cpu_id == CPU_MASTER) // I am master and I have got white token -> set and send finishing
             {
                 cpu_state = STATUS_FINISHING;
-                buffer[0] = 0;
+                buffer[LENGHT_POSITION] = 0;
                 sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
 
             } else { // if I am not CPU_MASTER -> decide what next
-                buffer[0] = 0;
+                buffer[LENGHT_POSITION] = 0;
 
                 if (myColor == WHITE)
                     sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
@@ -426,7 +427,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
         {
             std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a BLACK TOKEN" << std::endl;
 
-            buffer[0] = 0;
+            buffer[LENGHT_POSITION] = 0;
 
             if(cpu_id == CPU_MASTER)
                 sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
@@ -441,7 +442,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a MSG_FINISHING" << std::endl;
 
             cpu_state = STATUS_FINISHING;
-            buffer[0] = 0;
+            buffer[LENGHT_POSITION] = 0;
 
             if (cpu_id != (cpu_amount - 1)) // if I am not last one
                 sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
