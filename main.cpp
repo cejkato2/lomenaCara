@@ -263,6 +263,20 @@ void sendMessage(int target, mpiTags mpitag) {
     MPI_Send(&buffer, MESSAGE_SIZE, MPI_INT, target, mpitag, MPI_COMM_WORLD);
 }
 
+
+void sendState(State * sendState, int target){
+
+        buffer[LENGHT_POSITION] = sendState->getSize();
+
+        unsigned int *arrayToCopy = sendState->getArrayPointerIndexes();
+        // I must copy it to the buffer
+        for (unsigned int i = 0; i < sendState->getSize(); i++) {
+            buffer[BODY_POSITION + i] = arrayToCopy[i];
+        }
+
+        sendMessage(target, MSG_WORK_TRANSFER);
+
+}
 /*!
  * divide stack s and send part to idle cpu target
  */
@@ -279,17 +293,7 @@ void sendWork(std::list<State *> &stack, int target) {
 
     for (it = list.begin(); it < list.end(); it++) {
 
-        State * sendState = *it;
-
-        buffer[LENGHT_POSITION] = sendState->getSize();
-
-        unsigned int *arrayToCopy = sendState->getArrayPointerIndexes();
-        // I must copy it to the buffer
-        for (unsigned int i = 0; i < sendState->getSize(); i++) {
-            buffer[BODY_POSITION + i] = arrayToCopy[i];
-        }
-
-        sendMessage(target, MSG_WORK_TRANSFER);
+        sendState(*it, target);
 
         if (cpu_id > target)
             myColor = BLACK;
@@ -301,6 +305,9 @@ void sendWork(std::list<State *> &stack, int target) {
 
 
 }
+
+
+
 
 /**
  * ask to work 
@@ -582,21 +589,8 @@ int main(int argc, char **argv) {
 
     permut(points);
 
-    //std::cout << "All permutations:" << std::endl;
-    if (cpu_id == CPU_MASTER) {
-        output_stream.open("vystup2.dat");
-        for (unsigned int i = 0; i < ((solution == NULL) ? 0 : solution->getSize()); i++) {
-            output_stream << (points[solution->getIndex(i)]).x << " " << points[solution->getIndex(i)].y << std::endl;
-        }
-        output_stream.close();
-        print(solution);
+  
 
-    }
-
-
-    /*--------*/
-    /*cleaning*/
-    /*--------*/
 
 
     /*!
@@ -620,7 +614,45 @@ int main(int argc, char **argv) {
         std::cerr << "========= I am CPU_MASTER cpu#" << cpu_id << " best solution has " << bestPrice << " breaks ===========" << std::endl;
     }
 
+    // send it back whole solution
+
+
+        MPI_Bcast(&bestPrice, 1, MPI_UNSIGNED, CPU_MASTER, MPI_COMM_WORLD);
+        MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id); // if I comment this then cpu_id is zero
+
+        if( (myPrice == bestPrice) && (cpu_id != CPU_MASTER) ) // I found the best solution, but I am not master -> send solution to master
+            sendState(solution, CPU_MASTER);
+
+        if( (cpu_id == CPU_MASTER) && (bestPrice!= myPrice) ) { // if cpu master doesnt have best solution, then recieve at least one
+            MPI_Status status;
+            MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+
+            if(solution != NULL)
+                delete solution;
+
+            solution = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
+        }
+
+
+
     MPI_Finalize();
+
+
+     if (cpu_id == CPU_MASTER) {
+        output_stream.open("vystup2.dat");
+        for (unsigned int i = 0; i < ((solution == NULL) ? 0 : solution->getSize()); i++) {
+            output_stream << (points[solution->getIndex(i)]).x << " " << points[solution->getIndex(i)].y << std::endl;
+        }
+        output_stream.close();
+        print(solution);
+
+    }
+
+
+
+    /*--------*/
+    /*cleaning*/
+    /*--------*/
 
     delete [] points;
 
