@@ -69,10 +69,6 @@ public:
      * @return return last used postition
      */
     unsigned int getLastUsedPosition();
-    /**
-     *
-     * @return return total price(count of breaks)
-     */
 
     /**
      * @return vector of indexes, using getIndex()
@@ -110,10 +106,6 @@ public:
 
    /**
     *  outputstream operator
-    * @param a
-    * @param b
-    * @param c
-    * @return
     */
    friend std::ostream& operator<< (std::ostream &out, const State &myState){
 
@@ -126,7 +118,7 @@ public:
    }
 
 
-   /**
+ /**
  * are three different points a,b,c on a line ?
  * @param a first point
  * @param b second point

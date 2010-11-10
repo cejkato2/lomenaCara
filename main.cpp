@@ -29,10 +29,26 @@
 #define MAX_TIME_FROM_IPROBE 10
 
 #define HEADER_SIZE 1 // defines size of header
-#define LENGHT_POSITION 0 // defines position of lenght of message
-#define MESSAGE_SIZE (buffer[LENGHT_POSITION]+HEADER_SIZE) // it defines total lenght of message
-#define BODY_POSITION (HEADER_SIZE) // defines where start body of message
 
+/*!
+ * defines position of lenght of message
+ */
+#define LENGHT_POSITION 0 
+
+/*!
+ * it defines total lenght of message
+ */
+#define MESSAGE_SIZE (buffer[LENGHT_POSITION]+HEADER_SIZE) 
+
+/*!
+ * defines where start body of message
+ */
+#define BODY_POSITION (HEADER_SIZE) 
+
+/*!
+ * color of cpu is used to decide whether to send BLACK token after sending work to another cpu;
+ * it is important for situation when sending work to predecessor
+ */
 enum color {
     WHITE,
     BLACK,
@@ -156,9 +172,19 @@ int tryToGetWork = 0;
 color myColor = WHITE;
 color tokenColor = NONE;
 
+/*!
+ * max size of memory for storing incoming and outgoing data
+ */
 int bufferSize = 2000;
+/*!
+ * buffer for incoming and outgoing data
+ */
 int buffer[2000];
 
+/*!
+ * Reading input data from FILE
+ * @param f - file descriptor
+ */
 int read_points(FILE *f) {
     int amount;
     fscanf(f, "%i", &amount);
@@ -185,6 +211,10 @@ int read_points(FILE *f) {
     return SUCCESS;
 }
 
+/*!
+ * Print points in order saved in state.
+ * @param state - state in DFS algorithm 
+ */
 void print(State *state) {
 
     for (unsigned int i = 0; i < state->getSize(); i++) {
@@ -201,13 +231,10 @@ void print(State *state) {
  * @return s chosen state
  */
 bool is_dividable(std::list<State *> &stack) {
-    //TODO FIXME
-
     if ((stack.size() >= (unsigned int) 2))
         return true;
 
     else return false;
-
 }
 
 /*!
@@ -258,12 +285,23 @@ std::vector<State *> getSharedStates(std::list<State *> &stack) {
     return ret;
 }
 
+/*!
+ * Send MPI message to cpu target with MPI_TAG mpitag.
+ * Size of message is MESSAGE_SIZE*MPI_INT and it is stored in buffer.
+ * @param target - number of cpu, that will get message
+ * @param mpitag - type of message, that is sent
+ */
 void sendMessage(int target, mpiTags mpitag) {
 
     MPI_Send(&buffer, MESSAGE_SIZE, MPI_INT, target, mpitag, MPI_COMM_WORLD);
 }
 
 
+/*!
+ * Serialize state and send it to target.
+ * @param sendState - state of DFS algorithm, that will be sent
+ * @param target - number of cpu, that will get state
+ */
 void sendState(State * sendState, int target){
 
         buffer[LENGHT_POSITION] = sendState->getSize();
@@ -275,10 +313,13 @@ void sendState(State * sendState, int target){
         }
 
         sendMessage(target, MSG_WORK_TRANSFER);
-
 }
+
 /*!
- * divide stack s and send part to idle cpu target
+ * Divide stack and send the part of it to idle cpu target, that asked for work.
+ * Function sets color of cpu to BLACK, if cpu sends work to any predecessor.
+ * @param stack - stack of DFS algorithm
+ * @param target - number of cpu, that will receive work
  */
 void sendWork(std::list<State *> &stack, int target) {
 
@@ -292,26 +333,23 @@ void sendWork(std::list<State *> &stack, int target) {
     std::vector<State *> list = getSharedStates(stack);
     std::vector<State *>::iterator it;
 
+    // send all available states
     for (it = list.begin(); it < list.end(); it++) {
 
         sendState(*it, target);
 
-        if (cpu_id > target)
-            myColor = BLACK;
-
         delete *it;
     }
 
+    // in order to avoid sending bad token set BLACK color of cpu
+    if (cpu_id > target)
+      myColor = BLACK;
+
     std::cout << "cpu#" << cpu_id << ": send " << list.size() << " states to cpu#" << target << std::endl;
-
-
 }
 
-
-
-
 /**
- * ask to work 
+ * Send request for work to cpu with number target
  */
 void requestWork() {
 
@@ -328,19 +366,17 @@ void requestWork() {
 
     std::cout << "cpu#" << cpu_id << ": send MSG_WORK_REQUEST to " << target << std::endl;
 
-
     if (tryToGetWork > (cpu_amount + 10))
         tryToGetWork = 0;
 
     tryToGetWork++;
-
 }
 
 /*!
  * receive MPI message if any and handle it
  * it should include sending another job
- * @param stack - pointer to stack for dividing
- * @param status - variable for storing mpi status
+ * @param stack - pointer to stack of DFS algorithm
+ * @param blockingRecv - sets the mode of function to blocking or non-blocking, false for non-blocking
  */
 void handleMessages(std::list<State *> &stack, bool blockingRecv) {
 
@@ -381,7 +417,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             break;
         }
 
-        case MSG_NO_WORK: // somebody tells my that he cannot give my work
+        case MSG_NO_WORK: // somebody tells me that he cannot give me work
         {
             std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " cannot give me work" << std::endl;
 
@@ -417,13 +453,12 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
 
                 if (myColor == WHITE)
                     sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
-
             }
 
             break;
         }
 
-        case MSG_BLACK_TOKEN: // neighbour send me black token -> I send it to neighbour, nothing else
+        case MSG_BLACK_TOKEN: // neighbour send me black token -> I will send it to neighbour, nothing else
         {
             std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a BLACK TOKEN" << std::endl;
 
@@ -454,11 +489,14 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             std::cerr << std::endl << std::endl << "!!!!!!!!=========Fatal error, unknown type of message========!!!!!!!!" << std::endl << std::endl << std::endl;
             return;
         }
-
-
     }
 }
 
+/*!
+ * Main counting function. It generates permutations using DFS - expanding states 
+ * on the stack (calling expand of state).
+ * @param pointArray - array of Points, that CPU_MASTER got from input
+ */
 void permut(const Point *pointArray) {
 
 
@@ -474,14 +512,14 @@ void permut(const Point *pointArray) {
         }
     }
 
-
-
     while (cpu_state != STATUS_FINISHING) { // outer loop
 
         if (stack.empty()) {
             std::cerr << "cpu#" << cpu_id << " local stack empty -> status = IDLE" << std::endl;
             cpu_state = STATUS_IDLE;
 
+            // this cpu sent work to any predecessor, so it will send black token for sure,
+            // because of avoiding early finishing
             if (myColor == BLACK) {
                 myColor = WHITE;
                 sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
@@ -512,7 +550,6 @@ void permut(const Point *pointArray) {
     }
 
     std::cout << "cpu#" << cpu_id << "============= End of calculation ===============" << std::endl;
-
 }
 
 int main(int argc, char **argv) {
@@ -523,8 +560,6 @@ int main(int argc, char **argv) {
 
     MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id);
     MPI_Comm_size(MPI_COMM_WORLD, &cpu_amount);
-
-
 
 
     if (cpu_id == CPU_MASTER) {
@@ -594,12 +629,9 @@ int main(int argc, char **argv) {
 
     permut(points);
 
-  
-
-
 
     /*!
-     * wait for all cpus to end their job
+     * wait for all cpus to end their job after FINISHING message was sent
      */
     std::cerr << "===========cpu#" << cpu_id << " standing behind BARRIER==========" << std::endl;
     MPI_Barrier(MPI_COMM_WORLD);
@@ -622,21 +654,21 @@ int main(int argc, char **argv) {
     // send it back whole solution
 
 
-        MPI_Bcast(&bestPrice, 1, MPI_UNSIGNED, CPU_MASTER, MPI_COMM_WORLD);
-        MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id); // if I comment this then cpu_id is zero
+    MPI_Bcast(&bestPrice, 1, MPI_UNSIGNED, CPU_MASTER, MPI_COMM_WORLD);
+    MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id); // if I comment this then cpu_id is zero
 
-        if( (myPrice == bestPrice) && (cpu_id != CPU_MASTER) ) // I found the best solution, but I am not master -> send solution to master
-            sendState(solution, CPU_MASTER);
+    if( (myPrice == bestPrice) && (cpu_id != CPU_MASTER) ) // I found the best solution, but I am not master -> send solution to master
+        sendState(solution, CPU_MASTER);
 
-        if( (cpu_id == CPU_MASTER) && (bestPrice!= myPrice) ) { // if cpu master doesnt have best solution, then recieve at least one
-            MPI_Status status;
-            MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    if( (cpu_id == CPU_MASTER) && (bestPrice!= myPrice) ) { // if cpu master doesnt have best solution, then recieve at least one
+        MPI_Status status;
+        MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-            if(solution != NULL)
-                delete solution;
+        if(solution != NULL)
+            delete solution;
 
-            solution = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
-        }
+        solution = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
+    }
 
 
 
