@@ -388,7 +388,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
                 std::cerr << "===========Something wrong, no data expected =======";
 
 
-            if ((tryToGetWork > cpu_amount) && cpu_id == CPU_MASTER && cpu_state == STATUS_IDLE) // I am CPU_MASTER and I tried to get work, but nobody give it to me -> send white token
+            if ((tryToGetWork > cpu_amount) && (cpu_id == CPU_MASTER) && (cpu_state == STATUS_IDLE)) // I am CPU_MASTER and I tried to get work, but nobody give it to me -> send white token
             {
                 buffer[0] = 0;
                 sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
@@ -427,7 +427,11 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a BLACK TOKEN" << std::endl;
 
             buffer[0] = 0;
-            sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
+
+            if(cpu_id == CPU_MASTER)
+                sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+            else
+                sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
 
             break;
         }
