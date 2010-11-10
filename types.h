@@ -1,6 +1,6 @@
 #ifndef TYPES_H
 #define TYPES_H
-#include <iostream>
+#include <ostream>
 #define SUCCESS         0
 #define MIN_AMOUNT_ERR  1
 #define LESS_AMOUNT_ERR 2
@@ -15,16 +15,22 @@
       y = b;
     }
 
-    Point(Point &o) {
+    Point(const Point &o) {
       x = o.x;
       y = o.y;
     }
+
+
 
     friend std::ostream &operator<<(std::ostream &o, const Point *p) {
       o << "[ " << p->x << ", " << p->y << " ]";
       return o;
     }
-  
+
+    friend std::ostream &operator<<(std::ostream &o, const Point &p) {
+      o << "[ " << p.x << ", " << p.y << " ]";
+      return o;
+    }
 
    friend bool operator== (const Point &a, const Point &b)
 {

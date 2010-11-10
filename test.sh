@@ -1,11 +1,12 @@
 #!/bin/bash
+set -x
+mkdir -p testdata/png
+rm -f testdate/png/*.png
 
-rm testdate/*.png
-
-for i in testdata/test[0-9]; do 
+for i in testdata/test*; do 
   echo ${i}; 
   ./a.out $i 2> /dev/null
   make plot > /dev/null; 
-  mv output.png "${i}.png"; 
+  mv output.png "testdata/png/$(basename ${i}).png"; 
 done;
 
