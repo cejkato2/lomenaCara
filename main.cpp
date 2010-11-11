@@ -184,7 +184,7 @@ int bufferSize = 2000;
 int buffer[2000];
 
 int lastTimeOutPut = 0;
-unsigned int bestGlobalSolution = (unsigned) -1;
+unsigned int bestGlobalSolution = (unsigned) - 1;
 
 /*!
  * Reading input data from FILE
@@ -346,7 +346,7 @@ void sendWork(std::list<State *> &stack, int target) {
     }
 
     // in order to avoid sending bad token set BLACK color of cpu
-    if (cpu_id > target){
+    if (cpu_id > target) {
         tokenColor = BLACK;
     }
     std::cout << "cpu#" << cpu_id << ": send " << list.size() << " states to cpu#" << target << std::endl;
@@ -357,15 +357,15 @@ void sendWork(std::list<State *> &stack, int target) {
  */
 void requestWork() {
 
-            // this cpu sent work to any predecessor, so it will send black token for sure,
-            // because of avoiding early finishing
-            if (tokenColor == BLACK) {
-                tokenColor = NONE;
-                sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
-            }else if(tokenColor == WHITE){
-                tokenColor = NONE;
-                sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
-            }
+    // this cpu sent work to any predecessor, so it will send black token for sure,
+    // because of avoiding early finishing
+    if (tokenColor == BLACK) {
+        tokenColor = NONE;
+        sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
+    } else if (tokenColor == WHITE) {
+        tokenColor = NONE;
+        sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+    }
 
 
     int target = tryToGetWork;
@@ -453,10 +453,10 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
                 {
                     buffer[LENGHT_POSITION] = 0;
                     sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
-                    tryToGetWork=0;
+                    tryToGetWork = 0;
 
-                } 
-                    
+                }
+
                 requestWork(); // request for work to next CPU
                 repeatRecieve = true; // here i use blocking recv
                 break;
@@ -476,7 +476,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
                     buffer[LENGHT_POSITION] = 0;
 
                     if (tokenColor == NONE) // token který poslu az nebudu mit praci bude white, pokud byl dosud NONE
-                        tokenColor=WHITE;
+                        tokenColor = WHITE;
                 }
 
                 break;
@@ -491,7 +491,7 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
                 if (cpu_id == CPU_MASTER)
                     sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
                 else
-                    tokenColor=BLACK;
+                    tokenColor = BLACK;
 
                 break;
             }
@@ -512,14 +512,13 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
             case MSG_BEST_GLOBAL_SOLUTION:
             {
 
-                int recievedSolution = buffer[BODY_POSITION];
+                 int recievedSolution = buffer[0];
 
-                if( bestGlobalSolution > (unsigned) recievedSolution ){
-                std::cerr << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me bestGlobalSolution: "<< recievedSolution  << std::endl;
-                bestGlobalSolution = (unsigned) recievedSolution;
+                if (bestGlobalSolution > (unsigned) recievedSolution) {
 
-                // resend buffer to neighbour
-                sendMessage(CPU_NEXT_NEIGH, MSG_BEST_GLOBAL_SOLUTION);
+                    bestGlobalSolution = (unsigned) recievedSolution;
+                    std::cerr << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me bestGlobalSolution: " << recievedSolution << "my bestGlobal solution is:" << bestGlobalSolution << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------"<< std::endl;
+
                 }
                 break;
             }
@@ -578,13 +577,19 @@ void permut(const Point *pointArray) {
             stack.pop_back();
 
             parentState->expand(stack, solution, mask, cpu_id, pointsSize, bestGlobalSolution);
-            
-            if( (solution !=NULL) && ( bestGlobalSolution > solution->getPrice() ) ){
-             
-                buffer[LENGHT_POSITION] = 1;
-                buffer[BODY_POSITION]= (int) solution->getPrice();
-                sendMessage(CPU_NEXT_NEIGH, MSG_BEST_GLOBAL_SOLUTION);
-                bestGlobalSolution=solution->getPrice();
+
+            if ((solution != NULL) && (bestGlobalSolution > solution->getPrice())) {
+
+                bestGlobalSolution = solution->getPrice();
+                int tempBuf = (int) bestGlobalSolution;
+                // send it to all by MPI_ISend
+                MPI_Request request;
+
+                std::cerr << "cpu#" << cpu_id << " sending bestGlobalSolution=" << tempBuf << " to ALL" << std::endl  << std::endl;
+                for(int i=0;i<cpu_amount;i++){
+                    if(i!=cpu_id)
+                        MPI_Isend(&tempBuf , 1, MPI_INT, i, MSG_BEST_GLOBAL_SOLUTION, MPI_COMM_WORLD, &request );
+                }
             }
 
             if (lastTimeOutPut > 5000) {
