@@ -169,7 +169,6 @@ int timeFromIprobe = 0;
  */
 int tryToGetWork = 0;
 
-color myColor = WHITE;
 color tokenColor = NONE;
 
 /*!
@@ -180,6 +179,8 @@ int bufferSize = 2000;
  * buffer for incoming and outgoing data
  */
 int buffer[2000];
+
+int lastTimeOutPut = 0;
 
 /*!
  * Reading input data from FILE
@@ -265,8 +266,8 @@ std::vector<State *> getSharedStates(std::list<State *> &stack) {
             break;
     }
 
-    // divide half
-    int howManyStates = ((countSameLevel - (countSameLevel % 2)) / 2);
+    // divide 
+    int howManyStates = countSameLevel / 3;
 
     if (howManyStates == 0)
         howManyStates = 1;
@@ -296,23 +297,22 @@ void sendMessage(int target, mpiTags mpitag) {
     MPI_Send(&buffer, MESSAGE_SIZE, MPI_INT, target, mpitag, MPI_COMM_WORLD);
 }
 
-
 /*!
  * Serialize state and send it to target.
  * @param sendState - state of DFS algorithm, that will be sent
  * @param target - number of cpu, that will get state
  */
-void sendState(State * sendState, int target){
+void sendState(State * sendState, int target) {
 
-        buffer[LENGHT_POSITION] = sendState->getSize();
+    buffer[LENGHT_POSITION] = sendState->getSize();
 
-        unsigned int *arrayToCopy = sendState->getArrayPointerIndexes();
-        // I must copy it to the buffer
-        for (unsigned int i = 0; i < sendState->getSize(); i++) {
-            buffer[BODY_POSITION + i] = arrayToCopy[i];
-        }
+    unsigned int *arrayToCopy = sendState->getArrayPointerIndexes();
+    // I must copy it to the buffer
+    for (unsigned int i = 0; i < sendState->getSize(); i++) {
+        buffer[BODY_POSITION + i] = arrayToCopy[i];
+    }
 
-        sendMessage(target, MSG_WORK_TRANSFER);
+    sendMessage(target, MSG_WORK_TRANSFER);
 }
 
 /*!
@@ -342,9 +342,9 @@ void sendWork(std::list<State *> &stack, int target) {
     }
 
     // in order to avoid sending bad token set BLACK color of cpu
-    if (cpu_id > target)
-      myColor = BLACK;
-
+    if (cpu_id > target){
+        tokenColor = BLACK;
+    }
     std::cout << "cpu#" << cpu_id << ": send " << list.size() << " states to cpu#" << target << std::endl;
 }
 
@@ -352,6 +352,17 @@ void sendWork(std::list<State *> &stack, int target) {
  * Send request for work to cpu with number target
  */
 void requestWork() {
+
+            // this cpu sent work to any predecessor, so it will send black token for sure,
+            // because of avoiding early finishing
+            if (tokenColor == BLACK) {
+                tokenColor = NONE;
+                sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
+            }else if(tokenColor == WHITE){
+                tokenColor = NONE;
+                sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+            }
+
 
     int target = tryToGetWork;
     target = target % cpu_amount;
@@ -390,105 +401,119 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
         return;
 
 
-    // recieve what I can, and store it to the buffer
-    MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
+    bool repeatRecieve = true;
+
+    while (repeatRecieve) {
+        repeatRecieve = false;
+
+        // recieve what I can, and store it to the buffer
+        MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
 
-    switch (status.MPI_TAG) {
-        case MSG_WORK_REQUEST: // somebody ask me for work
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " asked me for work" << std::endl;
-            sendWork(stack, status.MPI_SOURCE);
-            break;
-        }
-
-        case MSG_WORK_TRANSFER: // somebody send me a work
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " sends me work, my stack.size() was =" << stack.size();
-            tryToGetWork = 0; // I get work, set tryToGetWork=0 for next time
-
-            // store state/work to local implicit stack
-            State *recievedState = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
-            stack.push_back(recievedState);
-
-            std::cout << " and now is " << stack.size() << std::endl;
-
-            cpu_state = STATUS_WORKING;
-            break;
-        }
-
-        case MSG_NO_WORK: // somebody tells me that he cannot give me work
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " cannot give me work" << std::endl;
-
-            if (buffer[LENGHT_POSITION] != 0)
-                std::cerr << "===========Something wrong, no data expected =======";
-
-
-            if ((tryToGetWork > cpu_amount) && (cpu_id == CPU_MASTER) && (cpu_state == STATUS_IDLE)) // I am CPU_MASTER and I tried to get work, but nobody give it to me -> send white token
+        switch (status.MPI_TAG) {
+            case MSG_WORK_REQUEST: // somebody ask me for work
             {
-                buffer[LENGHT_POSITION] = 0;
-                sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " asked me for work" << std::endl;
+                sendWork(stack, status.MPI_SOURCE);
 
-            } else {
-                requestWork(); // request for work to next CPU
+                if (stack.size() == 0) // I probably send NO_WORK so, I will wait to next message
+                    repeatRecieve = true;
+
+                break;
             }
 
-            handleMessages(stack, true); // here i use blocking recv
-            break;
-        }
-
-        case MSG_WHITE_TOKEN: // neighbour cpu state is IDLE and sends me a white token
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a WHITE TOKEN" << std::endl;
-
-            if (cpu_id == CPU_MASTER) // I am master and I have got white token -> set and send finishing
+            case MSG_WORK_TRANSFER: // somebody send me a work
             {
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " sends me work, my stack.size() was =" << stack.size();
+                tryToGetWork = 0; // I get work, set tryToGetWork=0 for next time
+
+                // store state/work to local implicit stack
+                State *recievedState = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
+                stack.push_back(recievedState);
+
+                std::cout << " and now is " << stack.size() << std::endl;
+
+                cpu_state = STATUS_WORKING;
+                break;
+            }
+
+            case MSG_NO_WORK: // somebody tells me that he cannot give me work
+            {
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " cannot give me work" << std::endl;
+
+                if (buffer[LENGHT_POSITION] != 0)
+                    std::cerr << "===========Something wrong, no data expected =======";
+
+
+                if ((tryToGetWork > cpu_amount) && (cpu_id == CPU_MASTER) && (cpu_state == STATUS_IDLE)) // I am CPU_MASTER and I tried to get work, but nobody give it to me -> send white token
+                {
+                    buffer[LENGHT_POSITION] = 0;
+                    sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+                    tryToGetWork=0;
+
+                } 
+                    
+                requestWork(); // request for work to next CPU
+                repeatRecieve = true; // here i use blocking recv
+                break;
+            }
+
+            case MSG_WHITE_TOKEN: // neighbour cpu state is IDLE and sends me a white token
+            {
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a WHITE TOKEN" << std::endl;
+
+                if (cpu_id == CPU_MASTER) // I am master and I have got white token -> set and send finishing
+                {
+                    cpu_state = STATUS_FINISHING;
+                    buffer[LENGHT_POSITION] = 0;
+                    sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
+
+                } else { // if I am not CPU_MASTER -> decide what next
+                    buffer[LENGHT_POSITION] = 0;
+
+                    if (tokenColor == NONE) // token který poslu az nebudu mit praci bude white, pokud byl dosud NONE
+                        tokenColor=WHITE;
+                }
+
+                break;
+            }
+
+            case MSG_BLACK_TOKEN: // neighbour send me black token -> I will send it to neighbour, nothing else
+            {
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a BLACK TOKEN" << std::endl;
+
+                buffer[LENGHT_POSITION] = 0;
+
+                if (cpu_id == CPU_MASTER)
+                    sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+                else
+                    tokenColor=BLACK;
+
+                break;
+            }
+
+            case MSG_FINISHING: // neighbour sends me MSG_FINISHING, I finish and send finish to other neighbour
+            {
+                std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a MSG_FINISHING" << std::endl;
+
                 cpu_state = STATUS_FINISHING;
                 buffer[LENGHT_POSITION] = 0;
-                sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
 
-            } else { // if I am not CPU_MASTER -> decide what next
-                buffer[LENGHT_POSITION] = 0;
+                if (cpu_id != (cpu_amount - 1)) // if I am not last one
+                    sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
 
-                if (myColor == WHITE)
-                    sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
+                break;
+            }
+            default:
+            {
+                std::cerr << std::endl << std::endl << "!!!!!!!!=========Fatal error, unknown type of message========!!!!!!!!" << std::endl << std::endl << std::endl;
+                return;
             }
 
-            break;
+
         }
 
-        case MSG_BLACK_TOKEN: // neighbour send me black token -> I will send it to neighbour, nothing else
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a BLACK TOKEN" << std::endl;
 
-            buffer[LENGHT_POSITION] = 0;
-
-            if(cpu_id == CPU_MASTER)
-                sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
-            else
-                sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
-
-            break;
-        }
-
-        case MSG_FINISHING: // neighbour sends me MSG_FINISHING, I finish and send finish to other neighbour
-        {
-            std::cout << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me a MSG_FINISHING" << std::endl;
-
-            cpu_state = STATUS_FINISHING;
-            buffer[LENGHT_POSITION] = 0;
-
-            if (cpu_id != (cpu_amount - 1)) // if I am not last one
-                sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
-
-            break;
-        }
-        default:
-        {
-            std::cerr << std::endl << std::endl << "!!!!!!!!=========Fatal error, unknown type of message========!!!!!!!!" << std::endl << std::endl << std::endl;
-            return;
-        }
     }
 }
 
@@ -518,13 +543,6 @@ void permut(const Point *pointArray) {
             std::cerr << "cpu#" << cpu_id << " local stack empty -> status = IDLE" << std::endl;
             cpu_state = STATUS_IDLE;
 
-            // this cpu sent work to any predecessor, so it will send black token for sure,
-            // because of avoiding early finishing
-            if (myColor == BLACK) {
-                myColor = WHITE;
-                sendMessage(CPU_NEXT_NEIGH, MSG_BLACK_TOKEN);
-            }
-
             requestWork();
             handleMessages(stack, true); // use blocking recv, because there is no work at all
         }
@@ -540,6 +558,15 @@ void permut(const Point *pointArray) {
             stack.pop_back();
 
             parentState->expand(stack, solution, mask, cpu_id, pointsSize);
+
+
+            if (lastTimeOutPut > 5000) {
+                std::cerr << "cpu#" << cpu_id << " working, my stack.size()=" << stack.size() << std::endl;
+                lastTimeOutPut = 0;
+            } else {
+                lastTimeOutPut++;
+            }
+
 
             if (timeFromIprobe >= MAX_TIME_FROM_IPROBE) {
                 handleMessages(stack, false);
@@ -657,14 +684,14 @@ int main(int argc, char **argv) {
     MPI_Bcast(&bestPrice, 1, MPI_UNSIGNED, CPU_MASTER, MPI_COMM_WORLD);
     MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id); // if I comment this then cpu_id is zero
 
-    if( (myPrice == bestPrice) && (cpu_id != CPU_MASTER) ) // I found the best solution, but I am not master -> send solution to master
+    if ((myPrice == bestPrice) && (cpu_id != CPU_MASTER)) // I found the best solution, but I am not master -> send solution to master
         sendState(solution, CPU_MASTER);
 
-    if( (cpu_id == CPU_MASTER) && (bestPrice!= myPrice) ) { // if cpu master doesnt have best solution, then recieve at least one
+    if ((cpu_id == CPU_MASTER) && (bestPrice != myPrice)) { // if cpu master doesnt have best solution, then recieve at least one
         MPI_Status status;
         MPI_Recv(&buffer, bufferSize, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-        if(solution != NULL)
+        if (solution != NULL)
             delete solution;
 
         solution = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
@@ -675,7 +702,7 @@ int main(int argc, char **argv) {
     MPI_Finalize();
 
 
-     if (cpu_id == CPU_MASTER) {
+    if (cpu_id == CPU_MASTER) {
         output_stream.open("vystup2.dat");
         for (unsigned int i = 0; i < ((solution == NULL) ? 0 : solution->getSize()); i++) {
             output_stream << (points[solution->getIndex(i)]).x << " " << points[solution->getIndex(i)].y << std::endl;

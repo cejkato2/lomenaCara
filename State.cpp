@@ -144,14 +144,14 @@ void State::expand(std::list<State*> &stack, State *&solution, std::vector<bool>
 
                 std::cout << "cpu#" << cpu_id << " prev min_breaks " << ((solution==NULL)? 0 : solution->getPrice());
                 
-                //std::cout << *this << std::endl;
+                std::cout << " my price=" << this->getPrice() << std::endl;
 
                 if(solution != NULL)
                     delete solution; // because I have got new better solution
 
                 solution = this; // here I store the new solution
 
-                std::cout << " new: " << solution->getPrice() << std::endl;
+                std::cout << " and new solution price=" << solution->getPrice() << std::endl;
               }else{
                 delete this; // if parentState is not a best solution
               }
