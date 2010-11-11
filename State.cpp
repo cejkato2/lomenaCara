@@ -134,7 +134,7 @@ unsigned int State::reCountPrice(){
 
 }
 
-void State::expand(std::list<State*> &stack, State *&solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize){
+void State::expand(std::list<State*> &stack, State *&solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize, unsigned int bestGlobalSolution){
 
 
           if(this->getSize()==pointsSize) // if I am on a floor, I cannot expand
@@ -179,7 +179,12 @@ void State::expand(std::list<State*> &stack, State *&solution, std::vector<bool>
               while(!mask[lastPosition]) // iterate to position where mask variable=true, thats the index which can be added to new state
                   lastPosition++;
 
-              if(solution != NULL && ( this->getExpandPrice(lastPosition) >= solution->getPrice() )) // if I cannot get better solution = bounding
+              if (this->getExpandPrice(lastPosition) >= bestGlobalSolution){
+                  lastPosition++;
+                  continue;
+              }
+
+              if(solution != NULL && ( this->getExpandPrice(lastPosition) >= solution->getPrice() ) ) // if I cannot get better solution = bounding
               {
                   lastPosition++;
                   continue;

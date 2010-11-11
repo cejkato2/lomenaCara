@@ -98,7 +98,10 @@ enum mpiTags {
     /*!
      * tell cpus to end themselves
      */
-    MSG_FINISHING
+    MSG_FINISHING,
+
+    MSG_BEST_GLOBAL_SOLUTION
+
 };
 
 /*!
@@ -181,6 +184,7 @@ int bufferSize = 2000;
 int buffer[2000];
 
 int lastTimeOutPut = 0;
+unsigned int bestGlobalSolution = (unsigned) -1;
 
 /*!
  * Reading input data from FILE
@@ -504,6 +508,22 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
 
                 break;
             }
+
+            case MSG_BEST_GLOBAL_SOLUTION:
+            {
+
+                int recievedSolution = buffer[BODY_POSITION];
+
+                if( bestGlobalSolution > (unsigned) recievedSolution ){
+                std::cerr << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me bestGlobalSolution: "<< recievedSolution  << std::endl;
+                bestGlobalSolution = (unsigned) recievedSolution;
+
+                // resend buffer to neighbour
+                sendMessage(CPU_NEXT_NEIGH, MSG_BEST_GLOBAL_SOLUTION);
+                }
+                break;
+            }
+
             default:
             {
                 std::cerr << std::endl << std::endl << "!!!!!!!!=========Fatal error, unknown type of message========!!!!!!!!" << std::endl << std::endl << std::endl;
@@ -557,8 +577,15 @@ void permut(const Point *pointArray) {
             State *parentState = stack.back();
             stack.pop_back();
 
-            parentState->expand(stack, solution, mask, cpu_id, pointsSize);
-
+            parentState->expand(stack, solution, mask, cpu_id, pointsSize, bestGlobalSolution);
+            
+            if( (solution !=NULL) && ( bestGlobalSolution > solution->getPrice() ) ){
+             
+                buffer[LENGHT_POSITION] = 1;
+                buffer[BODY_POSITION]= (int) solution->getPrice();
+                sendMessage(CPU_NEXT_NEIGH, MSG_BEST_GLOBAL_SOLUTION);
+                bestGlobalSolution=solution->getPrice();
+            }
 
             if (lastTimeOutPut > 5000) {
                 std::cerr << "cpu#" << cpu_id << " working, my stack.size()=" << stack.size() << std::endl;

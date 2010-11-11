@@ -102,7 +102,7 @@ public:
     * @param cpu_id
     * @param pointsSize size of pointsArray
     */
-   void expand(std::list<State *> &stack, State *&solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize);
+   void expand(std::list<State *> &stack, State *&solution, std::vector<bool> &mask, int cpu_id, unsigned int pointsSize, unsigned int bestGlobalSolution);
 
    /**
     *  outputstream operator
