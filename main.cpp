@@ -26,7 +26,7 @@
 /*!
  * how many loop cycles should cpu count before getting new message
  */
-#define MAX_TIME_FROM_IPROBE 10
+#define MAX_TIME_FROM_IPROBE 3000
 
 #define HEADER_SIZE 1 // defines size of header
 
@@ -367,7 +367,7 @@ void requestWork() {
         sendMessage(CPU_NEXT_NEIGH, MSG_WHITE_TOKEN);
     }
 
-
+    
     int target = tryToGetWork;
     target = target % cpu_amount;
 
@@ -381,7 +381,7 @@ void requestWork() {
 
     std::cout << "cpu#" << cpu_id << ": send MSG_WORK_REQUEST to " << target << std::endl;
 
-    if (tryToGetWork > (cpu_amount + 10))
+    if (tryToGetWork > (cpu_amount + cpu_id + 10)) // just because overflow
         tryToGetWork = 0;
 
     tryToGetWork++;
@@ -506,18 +506,19 @@ void handleMessages(std::list<State *> &stack, bool blockingRecv) {
                 if (cpu_id != (cpu_amount - 1)) // if I am not last one
                     sendMessage(CPU_NEXT_NEIGH, MSG_FINISHING);
 
+                repeatRecieve = false; // just for sure
                 break;
             }
 
             case MSG_BEST_GLOBAL_SOLUTION:
             {
 
-                 int recievedSolution = buffer[0];
+                int recievedSolution = buffer[0];
 
                 if (bestGlobalSolution > (unsigned) recievedSolution) {
 
                     bestGlobalSolution = (unsigned) recievedSolution;
-                    std::cerr << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me bestGlobalSolution: " << recievedSolution << "my bestGlobal solution is:" << bestGlobalSolution << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------"<< std::endl;
+                    std::cerr << "cpu#" << cpu_id << ": cpu#" << status.MPI_SOURCE << " send me bestGlobalSolution: " << recievedSolution << "my bestGlobal solution is:" << bestGlobalSolution << " <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<------------------" << std::endl;
 
                 }
                 break;
@@ -558,6 +559,13 @@ void permut(const Point *pointArray) {
 
     while (cpu_state != STATUS_FINISHING) { // outer loop
 
+        handleMessages(stack, false); // use non blocking recv
+
+        if (cpu_state == STATUS_FINISHING) {
+            std::cerr << "cpu#" << cpu_id << " there is no work -> FINISHING" << std::endl;
+            break;
+        }
+
         if (stack.empty()) {
             std::cerr << "cpu#" << cpu_id << " local stack empty -> status = IDLE" << std::endl;
             cpu_state = STATUS_IDLE;
@@ -585,10 +593,10 @@ void permut(const Point *pointArray) {
                 // send it to all by MPI_ISend
                 MPI_Request request;
 
-                std::cerr << "cpu#" << cpu_id << " sending bestGlobalSolution=" << tempBuf << " to ALL" << std::endl  << std::endl;
-                for(int i=0;i<cpu_amount;i++){
-                    if(i!=cpu_id)
-                        MPI_Isend(&tempBuf , 1, MPI_INT, i, MSG_BEST_GLOBAL_SOLUTION, MPI_COMM_WORLD, &request );
+                std::cerr << "cpu#" << cpu_id << " sending bestGlobalSolution=" << tempBuf << " to ALL" << std::endl << std::endl;
+                for (int i = 0; i < cpu_amount; i++) {
+                    if (i != cpu_id)
+                        MPI_Isend(&tempBuf, 1, MPI_INT, i, MSG_BEST_GLOBAL_SOLUTION, MPI_COMM_WORLD, &request);
                 }
             }
 
@@ -701,6 +709,7 @@ int main(int argc, char **argv) {
     if (solution != NULL)
         myPrice = solution->getPrice();
 
+    std::cerr << "cpu#" << cpu_id << "sending myPrice=" << myPrice << "to MPI_Reduce" << std::endl;
     MPI_Reduce(&myPrice, &bestPrice, 1, MPI_UNSIGNED, MPI_MIN, CPU_MASTER, MPI_COMM_WORLD);
 
 
@@ -716,8 +725,10 @@ int main(int argc, char **argv) {
     MPI_Bcast(&bestPrice, 1, MPI_UNSIGNED, CPU_MASTER, MPI_COMM_WORLD);
     MPI_Comm_rank(MPI_COMM_WORLD, &cpu_id); // if I comment this then cpu_id is zero
 
-    if ((myPrice == bestPrice) && (cpu_id != CPU_MASTER)) // I found the best solution, but I am not master -> send solution to master
+    if ((myPrice == bestPrice) && (cpu_id != CPU_MASTER)) { // I found the best solution, but I am not master -> send solution to master
         sendState(solution, CPU_MASTER);
+        std::cerr << "cpu#" << cpu_id << "========= I send best solution to the CPU_MASTER" << std::endl;
+    }
 
     if ((cpu_id == CPU_MASTER) && (bestPrice != myPrice)) { // if cpu master doesnt have best solution, then recieve at least one
         MPI_Status status;
@@ -726,10 +737,14 @@ int main(int argc, char **argv) {
         if (solution != NULL)
             delete solution;
 
+        std::cerr << "cpu#" << cpu_id << "CPU_MASTER: solution from: cpu#" << status.MPI_SOURCE << " recieved" << std::endl;
         solution = new State(buffer[LENGHT_POSITION], points, &buffer[BODY_POSITION]);
     }
 
-
+    if (cpu_id == CPU_MASTER) {
+        std::cout << "=====HERE IS THE SOLUTION: ========" << std::endl;
+        print(solution);
+    }
 
     MPI_Finalize();
 
@@ -740,7 +755,6 @@ int main(int argc, char **argv) {
             output_stream << (points[solution->getIndex(i)]).x << " " << points[solution->getIndex(i)].y << std::endl;
         }
         output_stream.close();
-        print(solution);
 
     }
 
