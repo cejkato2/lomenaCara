@@ -1,0 +1,134 @@
+\documentclass[12pt]{article}
+\usepackage{epsf,epic,eepic,eepicemu}
+%\documentstyle[epsf,epic,eepic,eepicemu]{article}
+\usepackage[cp1250]{inputenc}
+
+
+\begin{document}
+%\oddsidemargin=-5mm \evensidemargin=-5mm \marginparwidth=.08in
+%\marginparsep=.01in \marginparpush=5pt \topmargin=-15mm
+%\headheight=12pt \headsep=25pt \footheight=12pt \footskip=30pt
+%\textheight=25cm \textwidth=17cm \columnsep=2mm \columnseprule=1pt
+%\parindent=15pt\parskip=2pt
+
+\begin{center}
+\bf Semestraln projekt MI-PAR 2010/2011:\\[5mm]
+    Paraleln algoritmus pro een problmu\\[5mm]
+       Jmno1 Pjmen1\\
+       Jmno2 Pjmen2\\[2mm]
+magistersk studijum, FIT VUT, Kolejn 550/2, 160 00 Praha 6\\[2mm]
+\today
+\end{center}
+
+\section{Definice problmu a popis sekvennho algoritmu}
+
+Popite problm, kter v program e. Jako vchoz pouijte text
+zadn, kter rozite o pesn vymezen vech odchylek, kter jste
+vi zadn bhem implementace provedli (nap.  pravy heuristick
+funkce, organizace zsobnku, apod.). Zmite i ppadn i takov
+prvky algoritmu, kter v zadn nebyly specifikovny, ale kter se
+ukzaly jako dleit.  Dle popite vstupy a vstupy algoritmu
+(formt vstupnch a vstupnch dat). Uvete tabulku nameench as
+sekvennho algoritmu pro rzn velk data.
+
+\section{Popis paralelnho algoritmu a jeho implementace v MPI}
+
+Popite paraleln algoritmus, opt vyjdte ze zadn a pesn
+vymezte odchylky, zvlt u algoritmu pro vyvaovn zte, hledn
+drce, ci ukonen vpotu.  Popite a vysvtlete strukturu
+celkovho paralelnho algoritmu na rovni proces v MPI a strukturu
+kdu jednotlivch proces. Nap. jak je naimplementovna smyka pro
+innost proces v aktivnm stavu i v stavu neinnosti. Jak jste
+zvolili konstanty a parametry pro klovn algoritmu. Struktura a
+smantika pkazov dky pro spoutn programu.
+
+\section{Namen vsledky a vyhodnocen}
+
+\begin{enumerate}
+\item Zvolte ti instance problmu s takovou velikost vstupnch dat, pro kter m
+sekvenn algoritmus asovou sloitost kolem 5, 10 a 15 minut. Pro
+meen as potebn na ten dat z disku a uloen na disk
+neuvaujte a zakomentujte ladc tisky, logy, zprvy a vstupy.
+\item Mte paraleln as pi pouit $i=2,\cdot,32$ procesor na stch Ethernet a InfiniBand.
+%\item Pri mereni kazde instance problemu na dany pocet procesoru spoctete pro vas algoritmus dynamicke delby prace celkovy pocet odeslanych zadosti o praci, prumer na 1 procesor a jejich uspesnost.
+%\item Mereni pro dany pocet procesoru a instanci problemu provedte 3x a pouzijte prumerne hodnoty.
+\item Z namench dat sestavte grafy zrychlen $S(n,p)$. Zjistte, zda a za jakych podmnek
+dolo k superlinernmu zrychlen a pokuste se je zdvodnit.
+\item Vyhodnote komunikan sloitost dynamickho vyvaovn zte a posute
+vhodnost vmi implementovanho algoritmu pro hledn drce a dlen
+zsobnku pri een vaeho problmu. Posute efektivnost a
+klovatelnost algoritmu. Popite nedostatky va implementace a
+navrhnte zlepen.
+\item Empiricky stanovte
+granularitu va implementace, tj., stupe paralelismu pro danou
+velikost eenho problmu. Stanovte kritria pro stanoven mez, za
+ktermi ji nen uinn rozkldat vpoet na men procesy, protoe
+by komunikan nklady previly urychlen paralelnm vpotem.
+
+\end{enumerate}
+
+\section{Zvr}
+
+Celkov zhodnocen semestrln prce a zkuenosti zskanch bhem
+semestru.
+
+\section{Literatura}
+
+\appendix
+
+\section{Nvod pro vkldn graf a obrzk do Latexu}
+
+Nejjednodu zpsob vytvoen obrzku je pout vektorov grafick
+editor (nap. xfig nebo jfig), ze kterho lze exportovat bu
+\begin{itemize}
+\item postscript formty (ps nebo eps formt) nebo
+\item latex formty (v poad prost latex, latex s macry epic, eepic, eepicemu). Uveden poad odpovd rstu
+komplikovanosti obrzk kter formt podporuje (prost latex macra
+umonuj pouze jednoduch, epic makra nco mezi, je teba
+vyzkouet).
+
+\end{itemize}
+Nsledujc pklady plat pro vechny ppady.
+
+Obrzek v postscriptu, vycentrovan a na celou ku strnky, s
+popisem a slem. Vimnete si, jak dit velikost obrazku.
+\begin{figure}[ht]
+\epsfysize=3cm \centerline{\epsfbox{VasObrazek.ps}} \caption{Popis
+vaeho obrazku} \label{labelvasehoobrazku}
+\end{figure}
+
+Obrzek pouze vloen mezi dky textu, bez popisu a slovn.\\
+\epsfxsize=1cm
+\rule{0pt}{0pt}\hfill\epsfbox{VasObrazek.ps}\hfill\rule{0pt}{0pt}
+
+Latexovsk obrzky maji ppony *.latex, *.epic, *.eepic, a
+*.eepicemu, respective.
+\begin{figure}[ht]
+\begin{center}
+\input VasObrazek.latex
+\end{center}
+\caption{Popis vaeho obrzku} \label{l1}
+\end{figure}
+Vyputenm zvorek {\tt figure} dostanete opt pouze rmeek v textu
+bez sla a popisu.
+
+Takhle jednodue mete poskldat obrzky vedle sebe.
+\begin{center}
+\setlength{\unitlength}{0.1mm}\input VasObrazek.epic
+\hglue 5mm
+\setlength{\unitlength}{0.15mm}\input VasObrazek.eepic
+\hglue 5mm
+\setlength{\unitlength}{0.2mm}\input VasObrazek.eepicemu
+\end{center}
+dit velikost latexovskych obrzk lze pkazem
+\begin{verbatim}
+\setlength{\unitlength}{0.1mm}
+\end{verbatim}
+kter mn mtko rastru obrzku, Tyto pkazy je ale souasn
+nutn vyhodit ze souboru, kter xfig vygeneroval.
+
+Pro vytven grafu lze pout program gnuplot, kter um generovat
+postscriptovy soubor, ktery vlote do Latexu ve uvedenm
+zpsobem.
+
+\end{document}
