@@ -13,7 +13,7 @@
 
 \begin{center}
 \bf Semestrální projekt MI-PAR 2010/2011:\\[5mm]
-    Paralelní algoritmus pro řešení problému\\[5mm]
+    Paralelní algoritmus pro řešení problému: Minimálně lomená souvislá čára\\[5mm]
        Tomáš Čejka\\
 	   Martin Lukáš\\[2mm]
 magisterské studijum, FIT ČVUT, Kolejní 550/2, 160 00 Praha 6\\[2mm]
@@ -21,6 +21,22 @@ magisterské studijum, FIT ČVUT, Kolejní 550/2, 160 00 Praha 6\\[2mm]
 \end{center}
 
 \section{Definice problému a popis sekvenčního algoritmu}
+Práce se zabývá algoritmem pro konstrukci souvislé lomené čáry skládající se z posloupnosti navazujících úseček, která spojí všech k bodů a bude obsahovat minimum zlomových bodů. 
+Sekvenční algoritmus je typu BB-DFS s hloubkou prohledávaného prostoru omezenou na k-2. Řešení vždy existuje.
+
+Pro reprezentaci bodu ze souboru byla vytvořena třída Point. Objekty této třídy jsou uloženy v globálně přístupném dynamicky vytvořeném poli, jehož velikost je rovněž zachycena v globální proměnné.
+
+Při procházení stavového prostoru byl využit implicitní zásobník pro ukládání zpracovávaných stavů. Tento zásobník je tvořen datovou strukturou std::list ze standartní C++ knihovny. Stavy jsou reprezentovány třídou State, jež uchovává pole celočíselných indexů používaných k adresaci v poli načtených bodů. Tato třída také obsahuje operace např. pro expandování stavu na zásobník. 
+
+Expanze je metoda stavu, která vytváří následníky stavu přidáním doposud nepoužitého bodu. Tímto postupem lze rekurzivně generovat kompletní stavový prostor, všechny permutace pořádí bodů. 
+
+Expanduje se vždy stav z vrcholu zásobníku. Při expanzi stavu se počítá cena, nebo-li počet zlomů vytvořených spojením posloupnosti bodů na než ukazují indexy stavu. Tato cena je taktéž součástí stavu, tedy není nutné opakovaně počítat počet zlomů, ale pouze vždy při expanzi rozhodnout o inkrementaci ceny.
+
+Pokud stav nelze již expandovat, je porovnána globální minimální cena s nově vypočtenou hodnotou a případně uchováno řešení s aktualizací globálního minima. Během odebírání stavů ze zásobníku je porovnána cena odebraného stavu s globálním minimem, pak je stav dále expandován nebo je smazán.
+
+Pořadí procházení stavů není nijak měněno, tj. stavy nejsou na zásobníku seřazeny dle ceny, i když by to bylo zřejmně vhodné.
+
+Po vyprázdnění implicitního zásobníku je proveden výpis řešení a program je ukončen.
 
 
 \section{Popis paralelního algoritmu a jeho implementace v MPI}
