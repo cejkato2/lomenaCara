@@ -3,9 +3,12 @@
 %\documentstyle[epsf,epic,eepic,eepicemu]{article}
 %\usepackage[cp1250]{inputenc}
 \usepackage[utf8]{inputenc}
+\usepackage[czech, english]{babel}
+\usepackage[T1]{fontenc} 
 \usepackage{verbatim}
 \usepackage{graphicx}
 \usepackage{hyperref}
+\usepackage{lmodern}
 
 
 \begin{document}
@@ -68,12 +71,12 @@ která nám zaručila synchronizaci všech procesorů, a funkci MPI\_Wtime(), kt
 Čas výpočtu jsme změřili jako rozdíl časů \(t_2\) a \(t_1\), kde \(t_1\) je čas před započetím výpočtu
 tesně za inicializací knihovny OpenMPI a \(t_2\) je čas na konci výpočtu před ukončením práce s knihovou.
 
-Část kódu po inicializaci:
+\paragraph{Část kódu po inicializaci:}
 \begin{verbatim}
  MPI_Barrier(MPI_COMM_WORLD);
  t1 = MPI_Wtime();
 \end{verbatim}
-Část kódu před ukončením:
+\paragraph{Část kódu před ukončením:}
 \begin{verbatim}
  MPI_Barrier(MPI_COMM_WORLD);
  t2 = MPI_Wtime();
@@ -82,8 +85,21 @@ tesně za inicializací knihovny OpenMPI a \(t_2\) je čas na konci výpočtu p�
  }
 \end{verbatim}
 
-\begin{figure}
+Měřili jsme na třech různých instancích problému se 16-ti body v rovině. Tyto tři instance jsme
+pojmenovali \emph{Test A}, \emph{Test B} a \emph{Test C}. Naměřili jsme dobu sekvenčního výpočtu
+a následně paralelního výpočtu se stejným algoritmem výpočtu. Pro všechny paralelní testy jsme měřili úlohu na
+různém počtu procesorů, konkrétně pro 2, 4, 8, 16, 24 a 32 procesorů. Všechna měření jsme zopakovali
+při spuštění na propojovací síti InfiniBand a Ethernet.
+
+Naměřené hodnoty jsme zanesli do tabulek rozdělených podle typu propojovací sítě. Nakonec jsme spočítali
+zrychlení oproti sekvenčnímu řešení a výsledky opět zanesli do tabulek.
+
+Pomocí OpenOffice.org jsme nechali vykreslit grafy znázorňující závislost času výpočtu na počtu procesorů
+a závislost zrychlení na počtu procesorů. Všechny grafy jsou v příloze.
+
+\begin{figure}[h]
 \caption{Propojovací síť Ethernet}
+\begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
 Počet CPU & A & B & C\\
@@ -102,11 +118,13 @@ Počet CPU & A & B & C\\
 \hline
 32 & 6,92410 & 7,53790 & 9,39125\\
 \hline
-\end{tabular} 
+\end{tabular}
+\end{center}
 \end{figure}
 
-\begin{figure}
- \caption{Propojovací síť InfiBand}
+\begin{figure}[h]
+ \caption{Propojovací síť InfiniBand}
+\begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
 Počet CPU & A & B & C\\
@@ -126,10 +144,37 @@ Počet CPU & A & B & C\\
 32 & 6,24150 & 7,13790 & 8,42100\\
 \hline
 \end{tabular} 
+\end{center}
 \end{figure}
 
-\begin{figure}
- \caption{Zrychlení Propojovací síť InfiBand}
+\begin{figure}[h]
+ \caption{Zrychlení Propojovací síť Ethernet}
+\begin{center}
+\begin{tabular}{|r|r|r|r|}
+\hline
+Počet CPU & A & B & C\\
+\hline
+1 & 1 & 1 & 1\\
+\hline
+2 & 8,15 & 8,78 & 8,99\\
+\hline
+4 & 24,40 & 24,84 & 16,55\\
+\hline
+8 & 41,18 & 29,26 & 23,92\\
+\hline
+16 & 42,81 & 35,45 & 31,66\\
+\hline
+24 & 45,03 & 42,86 & 37,77\\
+\hline
+32 & 46,48 & 42,32 & 38,55\\
+\hline
+\end{tabular}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+ \caption{Zrychlení Propojovací síť InfiniBand}
+\begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
 Počet CPU & A & B & C\\
@@ -149,33 +194,11 @@ Počet CPU & A & B & C\\
 32 & 51,56 & 44,69 & 42,99\\
 \hline
 \end{tabular} 
-\end{figure}
-
-\begin{figure}
- \caption{Zrychlení Propojovací síť Ethernet}
-\begin{tabular}{|r|r|r|r|}
-\hline
-Počet CPU & A & B & C\\
-\hline
-1 & 1 & 1 & 1\\
-\hline
-2 & 8,15 & 8,78 & 8,99\\
-\hline
-4 & 24,40 & 24,84 & 16,55\\
-\hline
-8 & 41,18 & 29,26 & 23,92\\
-\hline
-16 & 42,81 & 35,45 & 31,66\\
-\hline
-24 & 45,03 & 42,86 & 37,77\\
-\hline
-32 & 46,48 & 42,32 & 38,55\\
-\hline
-\end{tabular} 
+\end{center}
 \end{figure}
 
 \section{Závěr}
-Zhodnocení
+
 
 \section{Literatura}
 \begin{enumerate}
@@ -183,14 +206,56 @@ Zhodnocení
 \item \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/poznamky_k_implementaci}{Stránky cvičení - poznámky k implementaci}
 \end{enumerate}
 
+
 \appendix
-
-
-\begin{figure}[ht]
+\section{Grafy závislosti času na počtu procesorů}
+\subsection{Propojovací síť InfiniBand}
+\begin{figure}[h]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testAinfib.png}
-\caption{Graf závislosti času na počtu CPU test A, InfiBand}
+\caption{Test A}
 \label{fig:testAinfib}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testBinfib.png}
+\caption{Test B}
+\label{fig:testBinfib}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testCinfib.png}
+\caption{Test C}
+\label{fig:testCinfib}
+\end{center}
+\end{figure}
+
+\subsection{Propojovací síť Ethernet}
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testAeth.png}
+\caption{Test A}
+\label{fig:testAether}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testBeth.png}
+\caption{Test B}
+\label{fig:testBether}
+\end{center}
+\end{figure}
+
+\begin{figure}[h]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testCeth.png}
+\caption{Test C}
+\label{fig:testCether}
 \end{center}
 \end{figure}
 
