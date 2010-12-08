@@ -3,6 +3,8 @@
 %\documentstyle[epsf,epic,eepic,eepicemu]{article}
 %\usepackage[cp1250]{inputenc}
 \usepackage[utf8]{inputenc}
+\usepackage{verbatim}
+\usepackage{graphicx}
 
 \begin{document}
 %\oddsidemargin=-5mm \evensidemargin=-5mm \marginparwidth=.08in
@@ -43,8 +45,78 @@ Po vyprázdnění implicitního zásobníku je proveden výpis řešení a progr
 
 \section{Popis paralelního algoritmu a jeho implementace v MPI}
 
+\begin{comment} 
+rozdělování zásobníku, 
+přidělování práce, 
+šíření nejlepších výsledků,
+ukončovací algoritmus (ADUV)
+\end{comment}
 
 \section{Naměřené výsledky a vyhodnocení}
+Měření probíhalo za použitím knihovních funkcí OpenMPI. Konkrétně se jednalo o funkce MPI\_Barrier(), 
+která nám zaručila synchronizaci všech procesorů, a funkci MPI\_Wtime(), která vrací čas v sekundách.
+Čas výpočtu jsme změřili jako rozdíl časů \(t_2\) a \(t_1\), kde \(t_1\) je čas před započetím výpočtu
+tesně za inicializací knihovny OpenMPI a \(t_2\) je čas na konci výpočtu před ukončením práce s knihovou.
+
+Část kódu po inicializaci:
+\begin{verbatim}
+ MPI_Barrier(MPI_COMM_WORLD);
+ t1 = MPI_Wtime();
+\end{verbatim}
+Část kódu před ukončením:
+\begin{verbatim}
+ MPI_Barrier(MPI_COMM_WORLD);
+ t2 = MPI_Wtime();
+ if (cpu_id == CPU_MASTER) {
+      std::cout << "Spotrebovany cas: " << t2 - t1 << std::endl;
+ }
+\end{verbatim}
+
+\begin{figure}
+\caption{Propojovací síť Ethernet}
+\begin{tabular}{|r|r|r|r|}
+\hline
+Počet CPU & A & B & C\\
+\hline
+1 & 321,8 & 307,3 & 338,6\\
+\hline
+2 & 39,46390 & 36,33120 & 40,27212\\
+\hline
+4 & 13,18690 & 12,84250 & 21,87080\\
+\hline
+8 & 7,81430 & 10,90410 & 15,13350\\
+\hline
+16 & 7,51740 & 8,99971 & 11,43290\\
+\hline
+24 & 37,14640 & 7,44230 & 9,58400\\
+\hline
+32 & 6,92410 & 7,53790 & 9,39125\\
+\hline
+\end{tabular} 
+\end{figure}
+
+\begin{figure}
+ \caption{Propojovací síť InfiBand}
+\begin{tabular}{|r|r|r|r|}
+\hline
+Počet CPU & A & B & C\\
+\hline
+1 & 321,8 & 307,3 & 338,6\\
+\hline
+2 & 38,95370 & 35,46150 & 40,27100\\
+\hline
+4 & 12,20080 & 12,45520 & 21,30230\\
+\hline
+8 & 7,14178 & 10,43290 & 15,05280\\
+\hline
+16 & 6,55517 & 8,99971 & 11,43290\\
+\hline
+24 & 6,21340 & 7,14230 & 8,85400\\
+\hline
+32 & 6,24150 & 7,13790 & 8,42100\\
+\hline
+\end{tabular} 
+\end{figure}
 
 \section{Závěr}
 Zhodnocení
@@ -52,6 +124,12 @@ Zhodnocení
 \section{Literatura}
 
 \appendix
-
+\begin{figure}[ht]
+\begin{center}
+\includegraphics[width=8cm]{grafy-zprava/testAinfib.png}
+\caption{Graf závislosti času na počtu CPU test A, InfiBand}
+\label{fig:testAinfib}
+\end{center}
+\end{figure}
 
 \end{document}
