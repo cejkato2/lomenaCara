@@ -5,6 +5,8 @@
 \usepackage[utf8]{inputenc}
 \usepackage{verbatim}
 \usepackage{graphicx}
+\usepackage{hyperref}
+
 
 \begin{document}
 %\oddsidemargin=-5mm \evensidemargin=-5mm \marginparwidth=.08in
@@ -51,7 +53,7 @@ Paralelní algoritmus pracuje následovně. Výpočetní uzly se inicializují f
 
 Výběr stavů, které budou odeslány pokud je o ně zažádáno, je realizován algortmem D-ADZ (půlení u dna). Žadatel obdrží stavy ze zásobníku s jednou polovinou stavu co nejblíže dnu. Tento algortimus bylo snadné realizovat, jelikož virtuální zásobník je řešen strukturou spojového seznamu.
 
-Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak spustí ukončovací algoritmus(ADUV). 
+Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak postupuje dle \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky#algoritmus_pro_distribuovane_ukonceni_paralelniho_vypoctu_aduv}{algoritmu pro distribuované ukončení paralelního výpočtu (ADUV)}. 
 
 \begin{comment} 
 rozdělování zásobníku, 
@@ -130,13 +132,14 @@ Počet CPU & A & B & C\\
 Zhodnocení
 
 \section{Literatura}
- \begin{verbatim} [1] https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky 
--- Stránky cvičení - prohledávání do hloubky \end{verbatim}
-
- \begin{verbatim} [2] https://edux.fit.cvut.cz/courses/MI-PAR/labs/poznamky_k_implementaci 
--- Stránky cvičení - poznámky k implementaci \end{verbatim}
+\begin{enumerate}
+\item \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky}{Stránky cvičení - prohledávání do hloubky}
+\item \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/poznamky_k_implementaci}{Stránky cvičení - poznámky k implementaci}
+\end{enumerate}
 
 \appendix
+
+
 \begin{figure}[ht]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testAinfib.png}
