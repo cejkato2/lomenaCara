@@ -45,6 +45,14 @@ Po vyprázdnění implicitního zásobníku je proveden výpis řešení a progr
 
 \section{Popis paralelního algoritmu a jeho implementace v MPI}
 
+Po implementaci sekvenčního algoritmu jsme přistoupili k jeho paralelizaci. Paralelizace v našem případě spočívá v sestavení  konečného automatu pro distribuci stavů a mezivýpočtů mezi zásobníky výpočetních uzlů. Je tedy použit totožný sekvenční algoritmus, který je spouštěn paralelně.
+
+Paralelní algoritmus pracuje následovně. Výpočetní uzly se inicializují funkcí MPIInit z knihovny MPI. Každému uzlu je přiřazeno unikátní pořadové číslo. Uzel s pořadovým číslem 0 načte data ze souboru a vyšle je hromadným vysíláním(MPIBroadcast) ostatním uzlům. Po odeslání těchto uzlů začne svůj lokální výpočet, tj. umístí na svůj zásobník první stavy. Ostatní uzly se cyklicky v pořadí sekvenčních čísel uzlů dotazují na práci. Pokud dotazovaný uzel nemá žádný stav který by mohl zaslat, dotazuje se v pořadí dalšího uzlu. V případě, že uzel může nabídnout stavy, vybere je a zašle je žadateli o práci. 
+
+Výběr stavů, které budou odeslány pokud je o ně zažádáno, je realizován algortmem D-ADZ (půlení u dna). Žadatel obdrží stavy ze zásobníku s jednou polovinou stavu co nejblíže dnu. Tento algortimus bylo snadné realizovat, jelikož virtuální zásobník je řešen strukturou spojového seznamu.
+
+Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak spustí ukončovací algoritmus(ADUV). 
+
 \begin{comment} 
 rozdělování zásobníku, 
 přidělování práce, 
@@ -122,6 +130,11 @@ Počet CPU & A & B & C\\
 Zhodnocení
 
 \section{Literatura}
+ \begin{verbatim} [1] https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky 
+-- Stránky cvičení - prohledávání do hloubky \end{verbatim}
+
+ \begin{verbatim} [2] https://edux.fit.cvut.cz/courses/MI-PAR/labs/poznamky_k_implementaci 
+-- Stránky cvičení - poznámky k implementaci \end{verbatim}
 
 \appendix
 \begin{figure}[ht]
