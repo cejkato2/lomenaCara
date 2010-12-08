@@ -4,11 +4,14 @@
 %\usepackage[cp1250]{inputenc}
 \usepackage[utf8]{inputenc}
 \usepackage[czech, english]{babel}
+\usepackage{czech}
 \usepackage[T1]{fontenc} 
 \usepackage{verbatim}
 \usepackage{graphicx}
 \usepackage{hyperref}
 \usepackage{lmodern}
+\usepackage{float}
+
 
 
 \begin{document}
@@ -79,6 +82,7 @@ ukončovací algoritmus (ADUV)
 \end{comment}
 
 \section{Naměřené výsledky a vyhodnocení}
+\subsection{Způsob měření}
 Měření probíhalo za použitím knihovních funkcí OpenMPI. Konkrétně se jednalo o funkce MPI\_Barrier(), 
 která nám zaručila synchronizaci všech procesorů, a funkci MPI\_Wtime(), která vrací čas v sekundách.
 Čas výpočtu jsme změřili jako rozdíl časů \(t_2\) a \(t_1\), kde \(t_1\) je čas před započetím výpočtu
@@ -109,9 +113,8 @@ zrychlení oproti sekvenčnímu řešení a výsledky opět zanesli do tabulek.
 
 Pomocí OpenOffice.org jsme nechali vykreslit grafy znázorňující závislost času výpočtu na počtu procesorů
 a závislost zrychlení na počtu procesorů. Všechny grafy jsou v příloze.
-
-\begin{figure}[h]
-\caption{Propojovací síť Ethernet}
+\subsection{Naměřené časy}
+\begin{table}[H]
 \begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
@@ -133,10 +136,10 @@ Počet CPU & A & B & C\\
 \hline
 \end{tabular}
 \end{center}
-\end{figure}
+\caption{Propojovací síť Ethernet}
+\end{table}
 
-\begin{figure}[h]
- \caption{Propojovací síť InfiniBand}
+\begin{table}[H]
 \begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
@@ -158,10 +161,11 @@ Počet CPU & A & B & C\\
 \hline
 \end{tabular} 
 \end{center}
-\end{figure}
+\caption{Propojovací síť InfiniBand}
+\end{table}
 
-\begin{figure}[h]
- \caption{Zrychlení Propojovací síť Ethernet}
+\subsection{Spočítané zrychlení}
+\begin{table}[H]
 \begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
@@ -183,10 +187,10 @@ Počet CPU & A & B & C\\
 \hline
 \end{tabular}
 \end{center}
-\end{figure}
+\caption{Zrychlení Propojovací síť Ethernet}
+\end{table}
 
-\begin{figure}[h]
- \caption{Zrychlení Propojovací síť InfiniBand}
+\begin{table}[H]
 \begin{center}
 \begin{tabular}{|r|r|r|r|}
 \hline
@@ -208,7 +212,8 @@ Počet CPU & A & B & C\\
 \hline
 \end{tabular} 
 \end{center}
-\end{figure}
+\caption{Zrychlení Propojovací síť InfiniBand}
+\end{table}
 
 \section{Závěr}
 Měřením jsme ověřili existenci zrychlení při použití paralelizace sekvenčního řešení problému, které
@@ -228,7 +233,8 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \appendix
 \section{Grafy závislosti času na počtu procesorů}
 \subsection{Propojovací síť InfiniBand}
-\begin{figure}[h]
+Grafy závislosti času na počtu procesorů při použití propojovací sítě InfiniBand.
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testAinfib.png}
 \caption{Test A}
@@ -236,7 +242,7 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{center}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testBinfib.png}
 \caption{Test B}
@@ -244,7 +250,7 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{center}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testCinfib.png}
 \caption{Test C}
@@ -253,7 +259,8 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{figure}
 
 \subsection{Propojovací síť Ethernet}
-\begin{figure}[h]
+Grafy závislosti času na počtu procesorů při použití propojovací sítě Ethernet.
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testAeth.png}
 \caption{Test A}
@@ -261,7 +268,7 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{center}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testBeth.png}
 \caption{Test B}
@@ -269,7 +276,7 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{center}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/testCeth.png}
 \caption{Test C}
@@ -278,19 +285,20 @@ pro nás bylo seznámení se s paralelním programováním velmi důležité a p
 \end{figure}
 
 \section{Grafy zrychlení}
-\begin{figure}[h]
+Grafy zobrazující závislost zrychlení výpočtu na počtu procesorů.
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/zrychleniinf.png}
-\caption{Zrychlení Infiniband}
 \label{fig:zrychleniinf}
+\caption{InfiniBand}
 \end{center}
 \end{figure}
 
-\begin{figure}[h]
+\begin{figure}[H]
 \begin{center}
 \includegraphics[width=8cm]{grafy-zprava/zrychlenieth.png}
-\caption{Zrychlení Ethernet}
 \label{fig:zrychlenieth}
+\caption{Ethernet}
 \end{center}
 \end{figure}
 
