@@ -52,11 +52,24 @@ Po vyprázdnění implicitního zásobníku je proveden výpis řešení a progr
 
 Po implementaci sekvenčního algoritmu jsme přistoupili k jeho paralelizaci. Paralelizace v našem případě spočívá v sestavení  konečného automatu pro distribuci stavů a mezivýpočtů mezi zásobníky výpočetních uzlů. Je tedy použit totožný sekvenční algoritmus, který je spouštěn paralelně.
 
-Paralelní algoritmus pracuje následovně. Výpočetní uzly se inicializují funkcí MPIInit z knihovny MPI. Každému uzlu je přiřazeno unikátní pořadové číslo. Uzel s pořadovým číslem 0 načte data ze souboru a vyšle je hromadným vysíláním(MPIBroadcast) ostatním uzlům. Po odeslání těchto uzlů začne svůj lokální výpočet, tj. umístí na svůj zásobník první stavy. Ostatní uzly se cyklicky v pořadí sekvenčních čísel uzlů dotazují na práci. Pokud dotazovaný uzel nemá žádný stav který by mohl zaslat, dotazuje se v pořadí dalšího uzlu. V případě, že uzel může nabídnout stavy, vybere je a zašle je žadateli o práci. 
+Zprávy které jsou mezi uzly zasílány mají nastaven příznak dle něhož je určen stav přijímacího automatu. Jsou to především tyto příznaky:
+\begin{itemize}
+\item MSG\_DIST\_DATA - příznak šíření počátečních dat, broadcast
+\item MSG\_WORK\_REQUEST - příznak žádosti o práci, stavy
+\item MSG\_WORK\_TRANSFER - příznak příchozí práce, stavů
+\item MSG\_NO\_WORK - příznak odpovědi žádné dostupné práce
+\item MSG\_BEST\_GLOBAL\_SOLUTION - příznak zprávy obsahující nejlepší globální řešení
+\end{itemize}
 
-Výběr stavů, které budou odeslány pokud je o ně zažádáno, je realizován algortmem D-ADZ (půlení u dna). Žadatel obdrží stavy ze zásobníku s jednou polovinou stavu co nejblíže dnu. Tento algortimus bylo snadné realizovat, jelikož virtuální zásobník je řešen strukturou spojového seznamu.
+Paralelní algoritmus pracuje takto. Výpočetní uzly se nejprve inicializují funkcí MPI\_Init z knihovny MPI. Každému uzlu je přiřazeno unikátní pořadové číslo. Uzel s pořadovým číslem 0 načte data ze souboru a vyšle je hromadným vysíláním(MPI\_Broadcast) ostatním uzlům. Po odeslání těchto uzlů začne svůj lokální sekvenční výpočet, tj. umístí na svůj zásobník první stavy. Ostatní uzly se cyklicky v pořadí sekvenčních čísel uzlů dotazují na práci. Pokud dotazovaný uzel nemá žádný stav na zásobníku, který by mohl zaslat, dotazuje se v pořadí dalšího uzlu. V případě, že uzel může nabídnout stavy, vybere je a zašle je žadateli o práci. 
 
-Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak postupuje dle \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky#algoritmus_pro_distribuovane_ukonceni_paralelniho_vypoctu_aduv}{algoritmu pro distribuované ukončení paralelního výpočtu (ADUV)}. 
+Výběr stavů ze zásobníku, které budou odeslány pokud je o ně zažádáno, je realizován algoritmem D-ADZ (půlení u dna). Žadatel obdrží stavy ze zásobníku s jednou polovinou stavu co nejblíže dnu. Tento algortimus bylo snadné realizovat, jelikož virtuální zásobník je řešen strukturou spojového seznamu.
+
+Aby nedocházelo k zbytečnému výpočtu cenově horších stavů než některé z nalezených na jiném uzlu, je implementováno tzv. šíření nejlepších výsledků. Pokud uzel nelezne lepší řešení než znají všechny ostatní uzly, rozešle těmto uzlům celočíselnou hodnotu pomocí neblokujícího MPI\_ISend ve zprávě s příznakem MSG\_BEST\_GLOBAL\_SOLUTION. Uzly si tuto globálně nejlepší cenu uloží a cenově horší stavy již neexpandují. Paralelní algoritmus je typu G-PBB-DFS-D.
+
+Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak postupuje dle \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky#algoritmus_pro_distribuovane_ukonceni_paralelniho_vypoctu_aduv}{algoritmu pro distribuované ukončení paralelního výpočtu (ADUV)}. Reakce na příchod WHITE/BLACK tokenu je součástí stavového automatu pro komunikaci. Pokud je výpočet ukončen, tj. všechny uzly obdrží zprávu s příznakem MSG\_FINISHING, je nutné přenést nejlepší známé řešení na uzel 0. Toto je řešeno použitím funkce MPI\_Barrier, jež slouží pro synchronizaci všech uzlů. Po této synchronizaci je rozesláno hromadným vysíláním cena nejlepšího řešení. Uzel jež toto řešení vypočítal jej zašle uzlu 0, který ho zapíše do souboru a výpíše na obrazovku. 
+
+
 
 \begin{comment} 
 rozdělování zásobníku, 
