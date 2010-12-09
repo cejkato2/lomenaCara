@@ -68,7 +68,7 @@ Paralelní algoritmus pracuje takto. Výpočetní uzly se nejprve inicializují 
 
 Výběr stavů ze zásobníku, které budou odeslány pokud je o ně zažádáno, je realizován algoritmem D-ADZ (půlení u dna). Žadatel obdrží stavy ze zásobníku s jednou polovinou stavu co nejblíže dnu. Tento algortimus bylo snadné realizovat, jelikož virtuální zásobník je řešen strukturou spojového seznamu.
 
-Aby nedocházelo k zbytečnému výpočtu cenově horších stavů než některé z nalezených na jiném uzlu, je implementováno tzv. šíření nejlepších výsledků. Pokud uzel nelezne lepší řešení než znají všechny ostatní uzly, rozešle těmto uzlům celočíselnou hodnotu pomocí neblokujícího MPI\_ISend ve zprávě s příznakem MSG\_BEST\_GLOBAL\_SOLUTION. Uzly si tuto globálně nejlepší cenu uloží a cenově horší stavy již neexpandují. Paralelní algoritmus je typu G-PBB-DFS-D.
+Aby nedocházelo ke zbytečnému výpočtu cenově horších stavů než některé z nalezených na jiném uzlu, je implementováno tzv. šíření nejlepších výsledků. Pokud uzel nalezne lepší řešení než znají všechny ostatní uzly, rozešle těmto uzlům celočíselnou hodnotu pomocí neblokujícího MPI\_ISend ve zprávě s příznakem MSG\_BEST\_GLOBAL\_SOLUTION. Uzly si tuto globálně nejlepší cenu uloží a cenově horší stavy již neexpandují. Paralelní algoritmus je typu G-PBB-DFS-D.
 
 Pokud uzel jež žádá o práci ji nedostane od žádného z uzlů, pak postupuje dle \href{https://edux.fit.cvut.cz/courses/MI-PAR/labs/prohledavani_do_hloubky#algoritmus_pro_distribuovane_ukonceni_paralelniho_vypoctu_aduv}{algoritmu pro distribuované ukončení paralelního výpočtu (ADUV)}. Reakce na příchod WHITE/BLACK tokenu je součástí stavového automatu pro komunikaci. Pokud je výpočet ukončen, tj. všechny uzly obdrží zprávu s příznakem MSG\_FINISHING, je nutné přenést nejlepší známé řešení na uzel 0. Toto je řešeno použitím funkce MPI\_Barrier, jež slouží pro synchronizaci všech uzlů. Po této synchronizaci je rozesláno hromadným vysíláním cena nejlepšího řešení. Uzel jež toto řešení vypočítal jej zašle uzlu 0, který ho zapíše do souboru a výpíše na obrazovku. 
 
@@ -214,6 +214,27 @@ Počet CPU & A & B & C\\
 \end{center}
 \caption{Zrychlení Propojovací síť InfiniBand}
 \end{table}
+Zrychlení nám vyšlo superlineární pro všechna měření paralelní úlohy, 
+protože platí $$S > p$$, kde \(S\) je zrychlení a \(p\) je počet procesorů. Důvodem takového zrychlení je vhodné rozesílání
+nejlepších dosažených výsledků a tím i četné ořezávání stavového prostoru.
+
+\subsection{Vyhodnocení}
+Každý procesor má vlastní čítač, který inkrementuje pokaždé, když žádá nějaký jiný procesor o práci. Tím je zajištěné,
+že procesory budou žádostmi zatěžovány rovnoměrně. Při rozdělování zásobníku a následném odeslání práce se dbá na to,
+aby odesílané stavy nebyly příliš rozpracované, protože z hlediska zpoždění při komunikaci je rychlejší, když procesor
+stav dopočítá sám, než aby tento stav poslal pro expandování jinému procesoru. Kdyby se totiž posílaly stavy blízké
+listům stavového prostoru, procesory, které práci dostávají, by žádali o práci mnohem častěji.
+
+Během implementace a testování jsme empiricky zjistili, že je výhodné, když se zásobník nedělí přesně na polovinu,
+ale odesílá se část, která je o něco menší než polovina. Tím jsme docílili toho, že nultému procesoru by měla dojít práce
+jako poslednímu, což je důležité z hlediska ukončovacího algoritmu, který je startován vždy od nultého procesoru.
+Stav, kdy nultému procesoru dojde práce dříve než ostatním je nežádoucí, protože nultý procesor začne posílat pešky a čekat
+na ukončení práce ostatních procesorů. Už nežádá další práci.
+
+Protože jsme neměli z časových důvodů (čekání ve frontě na clusteru) a kvůli omezeným prostředkům možnost změřit dobu 
+zpracování úlohy pro 16 bodů na více než 32 procesorech, nejsme schopni přesně určit, pro kolik procesorů převáží komunikace
+natolik, že již nebude výhodné počet procesorů zvyšovat. Z grafu zrychlení však můžeme pozorovat snižující se tendenci růstu
+a z toho usuzujeme, že pro 16 bodů mez, za kterou již není účinné problém rozkládat, leží kolem 40 procesorů.
 
 \section{Závěr}
 Měřením jsme ověřili existenci zrychlení při použití paralelizace sekvenčního řešení problému, které
