@@ -34,7 +34,7 @@ magisterské studijum, FIT ČVUT, Kolejní 550/2, 160 00 Praha 6\\[2mm]
 Práce se zabývá algoritmem pro konstrukci souvislé lomené čáry skládající se z posloupnosti navazujících úseček, která spojí všech k bodů a bude obsahovat minimum zlomových bodů. 
 Sekvenční algoritmus je typu BB-DFS s hloubkou prohledávaného prostoru omezenou na k-2. Řešení vždy existuje.
 
-Vstupní a výstupní jsou téměř stejného formátu. Body jsou v souboru reprezentovány dvěmi celými čísly na řádce. U vstupního souboru je navíc na prvním řádku uveden celkový počet čtených bodů, na pořadí bodů nezáleží. U výstupního souboru na pořadí bodů záleží, jejich pořadí udává posloupnost bodů z nichž je konstruován graf lomené čáry.
+Vstupní a výstupní soubor jsou téměř stejného formátu. Body jsou v souboru reprezentovány dvěmi celými čísly na řádce. U vstupního souboru je navíc na prvním řádku uveden celkový počet čtených bodů, na pořadí bodů nezáleží. U výstupního souboru na pořadí bodů záleží, jejich pořadí udává posloupnost bodů z nichž je konstruován graf lomené čáry.
 
 Pro reprezentaci bodu načteného ze souboru byla vytvořena třída Point. Objekty této třídy jsou uloženy v globálně přístupném dynamicky vytvořeném poli, jehož velikost je rovněž zachycena v globální proměnné.
 
@@ -225,11 +225,13 @@ aby odesílané stavy nebyly příliš rozpracované, protože z hlediska zpožd
 stav dopočítá sám, než aby tento stav poslal pro expandování jinému procesoru. Kdyby se totiž posílaly stavy blízké
 listům stavového prostoru, procesory, které práci dostávají, by žádali o práci mnohem častěji.
 
+\begin{comment}
 Během implementace a testování jsme empiricky zjistili, že je výhodné, když se zásobník nedělí přesně na polovinu,
 ale odesílá se část, která je o něco menší než polovina. Tím jsme docílili toho, že nultému procesoru by měla dojít práce
 jako poslednímu, což je důležité z hlediska ukončovacího algoritmu, který je startován vždy od nultého procesoru.
 Stav, kdy nultému procesoru dojde práce dříve než ostatním je nežádoucí, protože nultý procesor začne posílat pešky a čekat
 na ukončení práce ostatních procesorů. Už nežádá další práci.
+\end{comment}
 
 Protože jsme neměli z časových důvodů (čekání ve frontě na clusteru) a kvůli omezeným prostředkům možnost změřit dobu 
 zpracování úlohy pro 16 bodů na více než 32 procesorech, nejsme schopni přesně určit, pro kolik procesorů převáží komunikace
